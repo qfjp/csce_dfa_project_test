@@ -306,12 +306,10 @@ main = do
     withFile commentsFile WriteMode $ \h -> do
       results <- mapM (execute h (testSuiteRoot, binDir, progDir))
                       [ Simulate, Minimize, Searcher
-                      , Boolop, Invhom, Properties
+                      , BoolopComp, BoolopProd, Invhom, Properties
                       ]
-
       hPutStrLn h "-----------------------------------------------------"
-      --mapM_ (hPrint h) results
-      mapM_ (flip (>>) (hPutStrLn h "") . hPrint h) results
+      mapM_ (flip (>>) (hPutStrLn h "") . hPutStrLn h . showProgExec) results
     putStrLn $ "Done.\nComments are in " ++ commentsFile
 
 compete :: [IO a] -> IO a
@@ -478,26 +476,27 @@ checkEquivalence dfaText dfaFile isoChecker
       hClose tempHandle
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
-          error $ isoChecker ++ " not executable"
+          exitPermissions isoChecker
       isomorphism <- readProcess isoChecker [dfaFile, tempFname] ""
       let firstLine =  head . lines $ isomorphism
       removeFile tempFname
       return $ firstLine == "The two DFAs are equivalent."
 
-data ComparisonType = Isomorphism | Equivalence
-
 compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
                -> IO [Bool]
 compareAnswers outputs ansFilePaths binPath typ
   = case typ of
+      RunTypeUndefined -> return [False]
       Simulate -> compareStringAnswers outputs ansFilePaths
       Minimize -> compareAs Isomorphism outputs ansFilePaths binPath
       Searcher -> compareAs Isomorphism outputs ansFilePaths binPath
-      Boolop -> compareAs Equivalence outputs ansFilePaths binPath
+      BoolopComp -> compareAs Equivalence outputs ansFilePaths binPath
+      BoolopProd -> compareAs Equivalence outputs ansFilePaths binPath
       Invhom -> compareAs Equivalence outputs ansFilePaths binPath
       Properties -> compareStringAnswers outputs ansFilePaths
 
-compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> FilePath -> IO [Bool]
+compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> FilePath
+          -> IO [Bool]
 compareAs tag outputs ansFilePaths binPath
   = do
       let outsAndAns = zip outputs ansFilePaths
