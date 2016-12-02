@@ -97,14 +97,14 @@ bopCompTestCases
  -- dfas to feed to the product construction
 bopProdTestCases :: [(String, String)]
 bopProdTestCases
-  = [ ("smallDFA","smallDFA2")
-    , ("smallerDFA","handoutDFA")
-    , ("handoutDFA","smallerDFA")
-    , ("searchDFA1","searchDFA2")
-    , ("searchDFA2","searchDFA1")
-    , ("bigDFA","randomHexDFA")
-    , ("bigDFA","bigDFA-comp")
-    , ("bigDFA-comp","randomHexDFA")
+  = [ ("smallDFA", "smallDFA2")
+    , ("smallerDFA", "handoutDFA")
+    , ("handoutDFA", "smallerDFA")
+    , ("searchDFA1", "searchDFA2")
+    , ("searchDFA2", "searchDFA1")
+    , ("bigDFA", "randomHexDFA")
+    , ("bigDFA", "bigDFA-comp")
+    , ("bigDFA-comp", "randomHexDFA")
     ]
  -- dfas to feed to the inverse homomorphism construction
 homTestCases :: [String]
