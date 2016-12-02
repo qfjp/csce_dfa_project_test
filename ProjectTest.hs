@@ -117,6 +117,11 @@ propTestCases :: [String]
 propTestCases
   = map show [1..8 :: Int]
 
+------{ Miscellaneous values }-------
+-- time limit for each run of your program (in seconds).
+timeout :: Int
+timeout = 11
+
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
