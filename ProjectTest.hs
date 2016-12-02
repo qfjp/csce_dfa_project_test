@@ -146,6 +146,44 @@ rtToFile BoolopProd = "boolop"
 rtToFile Invhom     = "invhom"
 rtToFile Properties = "properties"
 rtToFile RunTypeUndefined = "UNDEFINED"
+
+data Result
+  = NotImplemented
+  | ParseError
+  | BuildFail
+  | TimeOut
+  | FinishWithError
+  | FinishPerfect
+  | Unknown
+  deriving (Enum, Eq, Show)
+
+data ProgramExecution a
+    = PE { _tag :: RunType
+         , _errorCount :: Sum Int
+         , _result :: a }
+    deriving (Eq, Show)
+
+instance Functor ProgramExecution where
+    fmap f (PE t e r) = PE t e (f r)
+
+instance Applicative ProgramExecution where
+    pure = PE Simulate mempty
+    PE t1 e1 f <*> PE t2 e2 x
+      = PE (t1 <> t2) (e1 <> e2) (f x)
+
+instance Monad ProgramExecution where
+    return = pure
+    PE t e r >>= f
+      = let PE t' e' r' = f r
+        in PE (t <> t') (e <> e') r'
+
+showProgExec :: (Enum a, Show a) => ProgramExecution a -> String
+showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
+  = show t ++ ": " ++ resultToText t result ++
+      "\nprogress level " ++ show r ++ " with " ++ show e ++
+      " execution errors"
+  where result = toEnum . fromEnum $ r
+
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
