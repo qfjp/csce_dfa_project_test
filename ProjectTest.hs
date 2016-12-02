@@ -187,55 +187,38 @@ showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
+      RunTypeUndefined -> []
       Simulate
-        -> map (\x ->
-                 ( [x ++ ".txt", x ++ "-strings.txt"]
-                 , x ++ "-out.txt"))
-               simTestCases
+        -> let simIn x = [x ++ ".txt", x ++ "-strings.txt"]
+               simOut x = (x ++"-out.txt")
+           in makeTests simIn simOut simTestCases
       Minimize
-        -> map (\x ->
-                 ( ["nonminimalDFA" ++ x ++ ".txt" ]
-                 , "minDFA" ++ x ++ ".txt"))
-               minTestCases
+        -> let minIn x = ["nonminimalDFA" ++ x ++ ".txt" ]
+               minOut x ="minDFA" ++ x ++ ".txt"
+           in makeTests minIn minOut minTestCases
       Searcher
-        -> map (\x -> (["str" ++ x ++ ".txt"], "DFA" ++ x ++ ".txt"))
-               searchTestCases
-      Boolop
-        -> let complements
-                 = map (\x ->
-                         ([x ++ ".txt"], x ++ "-comp.txt"))
-                       bopCompTestCases
-               products
-                 = map (\(x,y) ->
-                         ( [x ++ ".txt", y ++ ".txt"]
-                         , x ++ "-x-" ++ y ++ ".txt"))
-                       bopProdTestCases
-          in complements ++ products
+        -> let searchIn x = ["str" ++ x ++ ".txt"]
+               searchOut x = "DFA" ++ x ++ ".txt"
+           in makeTests searchIn searchOut searchTestCases
+      BoolopComp
+        -> let compIn x = [x ++ ".txt"]
+               compOut x = x ++ "-comp.txt"
+           in makeTests compIn compOut bopCompTestCases
+      BoolopProd
+        -> let prodIn (x, y) = [x ++ ".txt", y ++ ".txt"]
+               prodOut (x, y) = x ++ "-x-" ++ y ++ ".txt"
+           in makeTests prodIn prodOut bopProdTestCases
       Invhom
-        -> map (\x ->
-                 ([x ++ ".txt", x ++ "-hom.txt"], x ++ "-out.txt"))
-               homTestCases
+        -> let invIn x = [x ++ ".txt", x ++ "-hom.txt"]
+               invOut x = x ++ "-out.txt"
+           in makeTests invIn invOut homTestCases
       Properties
-        -> map (\x ->
-                 (["DFA" ++ x ++ ".txt"], "DFA" ++ x ++ "-out.txt"))
-               propTestCases
-
-{------ Miscellaneous values -------}
--- time limit for each run of your program (in seconds).
-timeout :: Int
-timeout = 11
-
-{-------------------------- HERE BE DRAGONS --------------------------}
-{---------------------------------------------------------------------}
-data RunType = Simulate | Minimize | Searcher
-             | Boolop | Invhom | Properties
-instance Show RunType where
-    show Simulate   = "simulator"
-    show Minimize   = "minimizer"
-    show Searcher   = "searcher"
-    show Boolop     = "boolop"
-    show Invhom     = "invhom"
-    show Properties = "properties"
+        -> let propIn x = ["DFA" ++ x ++ ".txt"]
+               propOut x = "DFA" ++ x ++ "-out.txt"
+           in makeTests propIn propOut propTestCases
+  where
+      makeTests :: (a -> [String]) -> (a -> String) -> [a] -> [([String], String)]
+      makeTests inputs answers = map (liftM2 (,) inputs answers)
 
 parseTextThenColon :: Parser String
 parseTextThenColon
