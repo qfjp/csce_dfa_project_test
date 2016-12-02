@@ -356,19 +356,21 @@ runProc h maybCwd testFiles (process:args)
         Nothing -> hPutStrLn h "    TIMED OUT" >> return Nothing
         Just x -> return . Just $ (fullProcStr, x)
 
-failExecution :: [(String, (ExitCode, String, String))] -> Int
-              -> RunType -> IO ProgramExecution
-failExecution failures failCode typ
+failExecution :: Handle -> [(String, (ExitCode, String, String))] -> Int
+              -> RunType -> IO (ProgramExecution Int)
+failExecution h failures failCode typ
   = do
       let first = head failures
-      putStrLn $ "  ERROR: " ++ (show . fst) first ++ " "
+          errorMsg = (\(_, _, x) -> x) . snd $ first
+      hPutStrLn h $ "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      hPutStrLn h $ "  ERROR: " ++ (show . fst) first ++ " "
                              ++ "failed with error:"
-      putStrLn $ "         " ++ (show . (\(_,_,x) -> x) . snd)
-                                first
-      putStrLn $ "  Abandoning " ++ show typ
+      hPutStrLn h $ unlines . map ("         " ++) . lines $ errorMsg
+      hPutStrLn h $ "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+      hPutStrLn h $ "  Abandoning " ++ show typ
       return PE { _tag = typ
-                    , _errorCount = length failures
-                    , _progress = failCode}
+                    , _errorCount = Sum $ length failures
+                    , _result = failCode}
 
 -- TODO break into blocks
 execute :: Handle -> (FilePath, FilePath, FilePath) -> RunType
