@@ -377,69 +377,76 @@ execute :: Handle -> (FilePath, FilePath, FilePath) -> RunType
         -> IO (ProgramExecution Int)
 execute h (tests, bins, this) typ
   = do
-      let buildFile = this ++ "/" ++ show typ ++ ".txt"
-          testDir = tests ++ "/" ++ show typ ++ "/"
-      parsedFile <- parseFromFile parseBuildFile buildFile
-      case parsedFile of
-        Right (builds, runs) -> do
-          hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
-          buildResults' <- sequence <$>
-              mapM (runProc h (Just this) [] . words) builds
-          when (isNothing buildResults') $
-              hPutStrLn h "  Build timed out"
-          let buildResults
-                = fromMaybe [] buildResults'
-              buildFailures
-                = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
-                         buildResults
-          if not (null buildFailures)
-          then failExecution buildFailures 2 typ
-          else do
-              hPutStrLn h $ "Running " ++ show typ ++ "..."
-              let userCmd = words . head $ runs
-                  testFilesNoPath = map fst . testCases $ typ
-                  testFiles = map (map (testDir ++)) testFilesNoPath
-                  --cmds = map (\x -> (userCmd, x)) testFiles
-              runResults <-
-                  mapM (\x -> runProc h (Just this) x userCmd)
-                       testFiles
-              case sequence runResults of
-                Nothing -> do
-                    let numTimeOuts
-                          = length . filter isNothing $ runResults
-                    hPutStrLn h "  ERROR: Time out"
-                    hPutStrLn h $ "  Abandoning " ++ show typ
-                    return PE { _tag = typ, _errorCount = numTimeOuts
-                              , _progress = 3
-                              }
-                Just results -> do
-                    let failures
-                          = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
-                                   results
-                    if not (null failures)
-                    then failExecution failures 4 typ
-                    else do
-                        hPutStrLn h "  Run succeeded, comparing output..."
-                        let outputs = map (\(_, (_, x, _)) -> T.pack x) results
-                            answerFiles = map snd . testCases $ typ
-                            answerFsInDir = map (testDir ++) answerFiles
-                        comparisons <- compareAnswers outputs
-                                                      answerFsInDir
-                                                      bins typ
-                        let numWrong = length . filter not $ comparisons
-                            wrongAnswers
-                              = map (fst . snd) . filter (not . fst) $
-                                zip comparisons results
-                        unless (null wrongAnswers) $ do
-                            hPutStrLn h
-                              "  Errors encountered in the following runs: "
-                            mapM_ (\x -> hPutStr h "    " >> hPutStrLn h x)
-                                  wrongAnswers
-                        when (null wrongAnswers) $
-                            hPutStrLn h "  No errors encountered"
-                        return PE { _tag = typ
-                                  , _errorCount = numWrong
-                                  , _progress = if numWrong == 0
+      let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
+          testDir = tests ++ "/" ++ rtToFile typ ++ "/"
+      buildExists <- doesFileExist buildFile
+      if not buildExists
+      then
+        return PE { _tag = typ, _errorCount = Sum 0
+                  , _result = 0
+                  }
+      else do
+        parsedFile <- parseFromFile parseBuildFile buildFile
+        case parsedFile of
+          Right (builds, runs) -> do
+            hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
+            buildResults' <- sequence <$>
+                mapM (runProc h (Just this) [] . words) builds
+            when (isNothing buildResults') $
+                hPutStrLn h "  Build timed out"
+            let buildResults
+                  = fromMaybe [] buildResults'
+                buildFailures
+                  = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
+                           buildResults
+            if not (null buildFailures)
+            then failExecution h buildFailures 2 typ
+            else do
+                hPutStrLn h $ "Running " ++ show typ ++ "..."
+                let userCmd = words . head $ runs
+                    testFilesNoPath = map fst . testCases $ typ
+                    testFiles = map (map (testDir ++)) testFilesNoPath
+                    --cmds = map (\x -> (userCmd, x)) testFiles
+                runResults <-
+                    mapM (\x -> runProc h (Just this) x userCmd)
+                         testFiles
+                case sequence runResults of
+                  Nothing -> do
+                      let numTimeOuts
+                            = length . filter isNothing $ runResults
+                      hPutStrLn h "  ERROR: Time out"
+                      hPutStrLn h $ "  Abandoning " ++ show typ
+                      return PE { _tag = typ, _errorCount = Sum numTimeOuts
+                                , _result = 3
+                                }
+                  Just results -> do
+                      let failures
+                            = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
+                                     results
+                      if not (null failures)
+                      then failExecution h failures 4 typ
+                      else do
+                          hPutStrLn h "  Run succeeded, comparing output..."
+                          let outputs = map (\(_, (_, x, _)) -> T.pack x) results
+                              answerFiles = map snd . testCases $ typ
+                              answerFsInDir = map (testDir ++) answerFiles
+                          comparisons <- compareAnswers outputs
+                                                        answerFsInDir
+                                                        bins typ
+                          let numWrong = length . filter not $ comparisons
+                              wrongAnswers
+                                = map (fst . snd) . filter (not . fst) $
+                                  zip comparisons results
+                          unless (null wrongAnswers) $ do
+                              hPutStrLn h
+                                "  Errors encountered in the following runs: "
+                              mapM_ (\x -> hPutStr h "    " >> hPutStrLn h x)
+                                    wrongAnswers
+                          when (null wrongAnswers) $
+                              hPutStrLn h "  No errors encountered"
+                          return PE { _tag = typ
+                                    , _errorCount = Sum numWrong
+                                    , _result = if numWrong == 0
                                                 then 5
                                                 else 4
                                     }
