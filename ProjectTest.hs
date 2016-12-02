@@ -374,7 +374,7 @@ failExecution h failures failCode typ
 
 -- TODO break into blocks
 execute :: Handle -> (FilePath, FilePath, FilePath) -> RunType
-        -> IO ProgramExecution
+        -> IO (ProgramExecution Int)
 execute h (tests, bins, this) typ
   = do
       let buildFile = this ++ "/" ++ show typ ++ ".txt"
@@ -442,13 +442,13 @@ execute h (tests, bins, this) typ
                                   , _progress = if numWrong == 0
                                                 then 5
                                                 else 4
-                                  }
-        Left err -> do
-          hPutStr h "  Parse Error: "
-          hPrint h err
-          return PE { _tag = typ
-                    , _errorCount = 0
-                    , _progress = 1}
+                                    }
+          Left err -> do
+            hPutStr h "  Parse Error: "
+            hPrint h err
+            return PE { _tag = typ
+                      , _errorCount = Sum 0
+                      , _result = 1}
 
 checkIsomorphism :: T.Text -> FilePath -> FilePath -> IO Bool
 checkIsomorphism dfaText dfaFile isoChecker
