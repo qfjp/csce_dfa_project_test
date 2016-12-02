@@ -259,49 +259,46 @@ defBaseDir
 --    3 - $prog built OK, but execution timed out at least once
 --    4 - $prog execution always completed (but there were errors)
 --    5 - $prog execution always completed without errors
+resultToText :: RunType -> Result -> String
+resultToText rt NotImplemented
+  = "not implemented -- " ++ rtToFile rt ++ ".txt does not exist"
+resultToText rt ParseError
+  = rtToFile rt ++ ".txt exists, but there was an error parsing it."
+resultToText rt BuildFail
+  = rtToFile rt ++ ".txt parsed OK, but build failed."
+resultToText _ TimeOut
+  = "built OK, but execution timed out at least once."
+resultToText _ FinishWithError
+  = "execution always completed, but there were errors."
+resultToText _ FinishPerfect
+  = "execution always completed without errors."
+resultToText rt _
+  = "??? unknown progress status for " ++ rtToFile rt
 
-progressToText :: RunType -> Int -> String
-progressToText rt p
-  | p == 0 = "not implemented -- " ++ show rt ++ ".txt does not exist"
-  | p == 1 = show rt ++ ".txt exists, but there was an error parsing it."
-  | p == 2 = show rt ++ ".txt parsed OK, but build failed."
-  | p == 3 = "built OK, but execution timed out at least once."
-  | p == 4 = "execution always completed, but there were errors."
-  | p == 5 = "execution always completed without errors."
-  | otherwise = "??? unknown progress status for " ++ show rt
-
-data ProgramExecution
-    = PE { _tag :: RunType
-         , _errorCount :: Int
-         , _progress :: Int }
-
-instance Show ProgramExecution where
-    show PE {_tag = t, _errorCount = e, _progress = p}
-      = show t ++ ": " ++ progressToText t p ++
-          "\nprogress level " ++ show p ++ " with " ++ show e ++
-          " execution errors"
-
---printOptions :: Options -> IO ()
---printOptions Options { _selftest = s, _dir = d }
---  = do
---      print s
---      d' <- d
---      print d'
+exitPermissions :: FilePath -> IO ()
+exitPermissions path
+  = do
+      putStrLn $ "Bad permissions on file: " ++ path
+      exitWith (ExitFailure 1)
 
 main :: IO ()
 main = do
-    opts <- parseArgs
-    unless (_optionsSet opts) $ printHelp >> return ()
-    testSuiteRoot <- (++ "/test-suite") <$> _testdir opts
-    binDir <- (++ "/bin") <$> _testdir opts
-    binPerms <- getPermissions binDir
+    opts          <- parseArgs
     let progDir = _progdir opts
-    testPerms <- getPermissions testSuiteRoot
-    unless (readable binPerms || readable testPerms) $
-        error "unreadable directory"
-    let commentsFile = _progdir opts ++ "/comments.txt"
+        commentsFile = _progdir opts ++ "/comments.txt"
         commentsFileBackup = _progdir opts ++ "/comments.bak"
+
+    unless (_optionsSet opts) $ void printHelp
+
+    testSuiteRoot <- (++ "/test-suite") <$> _testdir opts
+    binDir        <- (++ "/bin") <$> _testdir opts
+    binPerms      <- getPermissions binDir
+    testPerms     <- getPermissions testSuiteRoot
     commentsExist <- doesFileExist commentsFile
+
+    unless (readable binPerms)  $ exitPermissions binDir
+    unless (readable testPerms) $ exitPermissions testSuiteRoot
+
     when commentsExist $ do
         putStrLn $
             commentsFile ++ " exists -- making backup comments.bak"
