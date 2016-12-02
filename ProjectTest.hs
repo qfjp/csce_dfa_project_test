@@ -250,6 +250,7 @@ defBaseDir :: IO FilePath
 defBaseDir
   = getEnv "HOME" >>=
       (\h -> return $ h ++ "/public_html/csce355/prog-proj")
+
 -- Holds which programs were implemented and what progress was made on
 -- each:
 -- Values:
