@@ -122,6 +122,30 @@ propTestCases
 timeout :: Int
 timeout = 11
 
+--------------------------{ HERE BE DRAGONS }--------------------------
+--------------{ NOTHING BELOW THIS LINE SHOULD BE CHANGED }------------
+data ComparisonType = Isomorphism | Equivalence
+
+data RunType
+    = RunTypeUndefined | Simulate | Minimize | Searcher
+    | BoolopComp | BoolopProd | Invhom | Properties
+  deriving (Eq, Show)
+
+instance Monoid RunType where
+    mempty = RunTypeUndefined
+    RunTypeUndefined `mappend` x = x
+    x `mappend` RunTypeUndefined = x
+    x `mappend` _ = x
+
+rtToFile :: RunType -> String
+rtToFile Simulate   = "simulator"
+rtToFile Minimize   = "minimizer"
+rtToFile Searcher   = "searcher"
+rtToFile BoolopComp = "boolop"
+rtToFile BoolopProd = "boolop"
+rtToFile Invhom     = "invhom"
+rtToFile Properties = "properties"
+rtToFile RunTypeUndefined = "UNDEFINED"
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
