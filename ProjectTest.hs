@@ -460,7 +460,7 @@ checkIsomorphism dfaText dfaFile isoChecker
   = do
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
-          error $ isoChecker ++ " not executable"
+          exitPermissions isoChecker
       isomorphism <- readProcess isoChecker
                                  [dfaFile] (T.unpack dfaText)
       let firstLine =  head . lines $ isomorphism
