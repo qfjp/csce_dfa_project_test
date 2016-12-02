@@ -1,22 +1,24 @@
-#!/usr/bin/env stack
-{- stack runghc
-    --resolver lts-7.8
-    --install-ghc
-    --package process
-    --package text
- -}
+#!/usr/bin/env runhaskell
 
 {- Haskell script for testing a CSCE 355 project submission on a linux
  -  box.
+ -
+ - If you are running this on the lab machines, you may need to do the
+ - following:
+ -
+ - cabal update
+ - cabal install process
+ - cabal install directory
  -
  - Usage:
  -  $ ProjectTest.hs -t [your-submission-root-directory] -d [location of bin and test-suite]
  -}
 
 --import Data.Default
-import Control.Applicative ((<$>))
+import Control.Applicative (Applicative (..), (<$>))
 import Data.Foldable (foldlM)
 import Data.Maybe
+import Data.Monoid (Monoid (..), Sum(Sum), (<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
