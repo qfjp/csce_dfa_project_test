@@ -124,11 +124,19 @@ timeout = 11
 
 --------------------------{ HERE BE DRAGONS }--------------------------
 --------------{ NOTHING BELOW THIS LINE SHOULD BE CHANGED }------------
-data ComparisonType = Isomorphism | Equivalence
+data ComparisonType
+    = Isomorphism
+    | Equivalence
 
 data RunType
-    = RunTypeUndefined | Simulate | Minimize | Searcher
-    | BoolopComp | BoolopProd | Invhom | Properties
+    = RunTypeUndefined
+    | Simulate
+    | Minimize
+    | Searcher
+    | BoolopComp
+    | BoolopProd
+    | Invhom
+    | Properties
   deriving (Eq, Show)
 
 instance Monoid RunType where
