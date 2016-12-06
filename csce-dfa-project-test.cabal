@@ -79,3 +79,15 @@ executable csce-dfa-project-test
   -- Base language which the package is written in.
   default-language:    Haskell2010
 
+test-suite spec
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base >=4.9 && <4.10
+                     , hspec >=2.2 && <2.3
+                     , hspec-checkers >=0.1 && <0.2
+                     , QuickCheck >=2.8 && <2.9
+                     , checkers >=0.4 && <0.5
+                     , csce-dfa-project-test
