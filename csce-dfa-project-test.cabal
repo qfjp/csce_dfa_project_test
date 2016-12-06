@@ -82,9 +82,10 @@ executable csce-dfa-project-test
 test-suite spec
   default-language:    Haskell2010
   ghc-options:         -Wall
+  other-modules:       ProgramExecution, RunType
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  main-is:             Spec.hs
+  main-is:             Main.hs
   build-depends:       base >=4.9 && <4.10
                      , hspec >=2.2 && <2.3
                      , hspec-checkers >=0.1 && <0.2
