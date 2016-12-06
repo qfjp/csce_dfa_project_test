@@ -1,5 +1,7 @@
 #!/usr/bin/env runhaskell
 
+module ProjectTest where
+
 {- Haskell script for testing a CSCE 355 project submission on a linux
  -  box.
  -
@@ -36,47 +38,6 @@ import System.FilePath
 import Text.Parsec
 import Text.Parsec.String
 
-
-------------------------{ INSTANCE UNIT TESTS }-----------------------
-------------------------{ IGNORE THIS SECTION }-----------------------
--- import Test.Hspec
--- import Test.Hspec.Checkers
--- import Test.QuickCheck hiding (Result)
--- import Test.QuickCheck.Checkers
--- import Test.QuickCheck.Classes
---
--- instance Arbitrary RunType where
---     arbitrary
---       = frequency $ map (\x -> (1, return x))
---                         [ RunTypeUndefined, Simulate, Minimize
---                         , Searcher, BoolopComp, BoolopProd, Invhom
---                         , Properties ]
---
--- instance EqProp RunType where
---     (=-=) = eq
---
--- rtSpec :: SpecWith ()
--- rtSpec
---   = describe "RunType ?Monoid?" $
---       testBatch $ monoid (undefined :: RunType)
---
--- instance Arbitrary a => Arbitrary (ProgramExecution a) where
---     arbitrary = PE Simulate <$> arbitrary <*> arbitrary
---
--- instance Eq a => EqProp (ProgramExecution a) where
---     (=-=) = eq
---
--- peSpec :: SpecWith ()
--- peSpec
---   = describe "Program Execution ?Monad?" $ do
---       testBatch $ functor (undefined :: ProgramExecution (Int, String, Char))
---       testBatch $ applicative (undefined :: ProgramExecution (Int, String, Double))
---       testBatch $ monad (undefined :: ProgramExecution (Int, String, Double))
---       it "  <*> == ap" $
---         property $ \x y -> (x <*> y)
---           == ((x :: ProgramExecution (Int -> Int))
---                `ap` (y :: ProgramExecution Int))
-----------------------------------------------------------------------
 
  -- dfas to feed to simulator
 simTestCases :: [String]
@@ -165,27 +126,27 @@ data Result
   | Unknown
   deriving (Enum, Eq, Show)
 
-data ProgramExecution a
+data ProgramExecution a b
     = PE { _tag :: RunType
-         , _errorCount :: Sum Int
-         , _result :: a }
+         , _errorCount :: a
+         , _result :: b }
     deriving (Eq, Show)
 
-instance Functor ProgramExecution where
+instance Functor (ProgramExecution a) where
     fmap f (PE t e r) = PE t e (f r)
 
-instance Applicative ProgramExecution where
+instance Monoid a => Applicative (ProgramExecution a) where
     pure = PE Simulate mempty
     PE t1 e1 f <*> PE t2 e2 x
       = PE (t1 <> t2) (e1 <> e2) (f x)
 
-instance Monad ProgramExecution where
+instance Monoid a => Monad (ProgramExecution a) where
     return = pure
     PE t e r >>= f
       = let PE t' e' r' = f r
         in PE (t <> t') (e <> e') r'
 
-showProgExec :: (Enum a, Show a) => ProgramExecution a -> String
+showProgExec :: (Enum a, Show a) => ProgramExecution (Sum Int) a -> String
 showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
   = show t ++ ": " ++ resultToText t result ++
       "\nprogress level " ++ show r ++ " with " ++ show e ++
@@ -290,37 +251,6 @@ exitPermissions path
       putStrLn $ "Bad permissions on file: " ++ path
       exitWith (ExitFailure 1)
 
-main :: IO ()
-main = do
-    opts          <- parseArgs
-    let progDir = _progdir opts
-        commentsFile = _progdir opts ++ "/comments.txt"
-        commentsFileBackup = _progdir opts ++ "/comments.bak"
-
-    unless (_optionsSet opts) $ void printHelp
-
-    testSuiteRoot <- (++ "/test-suite") <$> _testdir opts
-    binDir        <- (++ "/bin") <$> _testdir opts
-    binPerms      <- getPermissions binDir
-    testPerms     <- getPermissions testSuiteRoot
-    commentsExist <- doesFileExist commentsFile
-
-    unless (readable binPerms)  $ exitPermissions binDir
-    unless (readable testPerms) $ exitPermissions testSuiteRoot
-
-    when commentsExist $ do
-        putStrLn $
-            commentsFile ++ " exists -- making backup comments.bak"
-        renameFile commentsFile commentsFileBackup
-    withFile commentsFile WriteMode $ \h -> do
-      results <- mapM (execute h (testSuiteRoot, binDir, progDir))
-                      [ Simulate, Minimize, Searcher
-                      , BoolopComp, BoolopProd, Invhom, Properties
-                      ]
-      hPutStrLn h "-----------------------------------------------------"
-      mapM_ (flip (>>) (hPutStrLn h "") . hPutStrLn h . showProgExec) results
-    putStrLn $ "Done.\nComments are in " ++ commentsFile
-
 compete :: [IO a] -> IO a
 compete actions
   = do
@@ -364,7 +294,7 @@ runProc h maybCwd testFiles (process:args)
         Just x -> return . Just $ (fullProcStr, x)
 
 failExecution :: Handle -> [(String, (ExitCode, String, String))] -> Int
-              -> RunType -> IO (ProgramExecution Int)
+              -> RunType -> IO (ProgramExecution (Sum Int) Int)
 failExecution h failures failCode typ
   = do
       let first = head failures
@@ -381,7 +311,7 @@ failExecution h failures failCode typ
 
 -- TODO break into blocks
 execute :: Handle -> (FilePath, FilePath, FilePath) -> RunType
-        -> IO (ProgramExecution Int)
+        -> IO (ProgramExecution (Sum Int) Int)
 execute h (tests, bins, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"

@@ -46,9 +46,21 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 
+library
+  hs-source-dirs:      src
+  exposed-modules:     ProjectTest
+  build-depends:       base >=4.9 && <4.10
+                     , text >=1.2 && <1.3
+                     , directory >=1.2 && <1.3
+                     , process >=1.4 && <1.5
+                     , filepath >=1.4 && <1.5
+                     , parsec >=3.1 && <3.2
+
+  default-language:    Haskell2010
+
 executable csce-dfa-project-test
   -- .hs or .lhs file containing the Main module.
-  main-is:             ProjectTest.hs
+  main-is:             Main.hs
 
   -- Modules included in this executable, other than Main.
   -- other-modules:
@@ -58,11 +70,8 @@ executable csce-dfa-project-test
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.9 && <4.10
-                     , text >=1.2 && <1.3
                      , directory >=1.2 && <1.3
-                     , process >=1.4 && <1.5
-                     , filepath >=1.4 && <1.5
-                     , parsec >=3.1 && <3.2
+                     , csce-dfa-project-test
 
   -- Directories containing source files.
   -- hs-source-dirs:
