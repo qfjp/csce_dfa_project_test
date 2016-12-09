@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parseBuildFile) where
 
 import Control.Monad (when)
 import Data.Either (rights)
