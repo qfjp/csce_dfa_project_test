@@ -88,19 +88,11 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
-      ;;
-  esac
+  stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
   set +ex
 
 script:
 - |
   set -ex
-  case "$BUILD" in
-    stack)
-      stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
-      ;;
-  esac
+  stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
   set +ex
