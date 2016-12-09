@@ -5,6 +5,7 @@ import System.Directory
 import System.IO
 
 import Arguments
+import ProgramExecution
 import ProjectTest
 
 main :: IO ()

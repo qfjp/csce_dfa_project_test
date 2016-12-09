@@ -17,6 +17,8 @@ module ProjectTest where
  -}
 
 import Parser
+import ProgramExecution
+
 import Text.Parsec.String (parseFromFile)
 
 --import Data.Default
@@ -85,78 +87,15 @@ timeout = 11
 
 --------------------------{ HERE BE DRAGONS }--------------------------
 --------------{ NOTHING BELOW THIS LINE SHOULD BE CHANGED }------------
+
 data ComparisonType
     = Isomorphism
     | Equivalence
 
-data RunType
-    = RunTypeUndefined
-    | Simulate
-    | Minimize
-    | Searcher
-    | BoolopComp
-    | BoolopProd
-    | Invhom
-    | Properties
-  deriving (Eq, Show)
-
-instance Monoid RunType where
-    mempty = RunTypeUndefined
-    RunTypeUndefined `mappend` x = x
-    x `mappend` RunTypeUndefined = x
-    x `mappend` _ = x
-
-rtToFile :: RunType -> String
-rtToFile Simulate   = "simulator"
-rtToFile Minimize   = "minimizer"
-rtToFile Searcher   = "searcher"
-rtToFile BoolopComp = "boolop"
-rtToFile BoolopProd = "boolop"
-rtToFile Invhom     = "invhom"
-rtToFile Properties = "properties"
-rtToFile RunTypeUndefined = "UNDEFINED"
-
-data Result
-  = NotImplemented
-  | ParseError
-  | BuildFail
-  | TimeOut
-  | FinishWithError
-  | FinishPerfect
-  | Unknown
-  deriving (Enum, Eq, Show)
-
-data ProgramExecution a b
-    = PE { _tag :: RunType
-         , _errorCount :: a
-         , _result :: b }
-    deriving (Eq, Show)
-
-instance Functor (ProgramExecution a) where
-    fmap f (PE t e r) = PE t e (f r)
-
-instance Monoid a => Applicative (ProgramExecution a) where
-    pure = PE Simulate mempty
-    PE t1 e1 f <*> PE t2 e2 x
-      = PE (t1 <> t2) (e1 <> e2) (f x)
-
-instance Monoid a => Monad (ProgramExecution a) where
-    return = pure
-    PE t e r >>= f
-      = let PE t' e' r' = f r
-        in PE (t <> t') (e <> e') r'
-
-showProgExec :: (Enum a, Show a) => ProgramExecution (Sum Int) a -> String
-showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
-  = show t ++ ": " ++ resultToText t result ++
-      "\nprogress level " ++ show r ++ " with " ++ show e ++
-      " execution errors"
-  where result = toEnum . fromEnum $ r
-
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
-      RunTypeUndefined -> []
+      Continued -> []
       Simulate
         -> let simIn x = [x ++ ".txt", x ++ "-strings.txt"]
                simOut x = (x ++"-out.txt")
@@ -189,32 +128,6 @@ testCases typ
   where
       makeTests :: (a -> [String]) -> (a -> String) -> [a] -> [([String], String)]
       makeTests inputs answers = map (liftM2 (,) inputs answers)
-
-
--- Holds which programs were implemented and what progress was made on
--- each:
--- Values:
---    0 - not implemented at all ($prog.txt file does not exist)
---    1 - $prog.txt file exists, but there was an error parsing it
---    2 - $prog.txt parsed OK, but the build failed (error return value)
---    3 - $prog built OK, but execution timed out at least once
---    4 - $prog execution always completed (but there were errors)
---    5 - $prog execution always completed without errors
-resultToText :: RunType -> Result -> String
-resultToText rt NotImplemented
-  = "not implemented -- " ++ rtToFile rt ++ ".txt does not exist"
-resultToText rt ParseError
-  = rtToFile rt ++ ".txt exists, but there was an error parsing it."
-resultToText rt BuildFail
-  = rtToFile rt ++ ".txt parsed OK, but build failed."
-resultToText _ TimeOut
-  = "built OK, but execution timed out at least once."
-resultToText _ FinishWithError
-  = "execution always completed, but there were errors."
-resultToText _ FinishPerfect
-  = "execution always completed without errors."
-resultToText rt _
-  = "??? unknown progress status for " ++ rtToFile rt
 
 exitPermissions :: FilePath -> IO ()
 exitPermissions path
@@ -414,7 +327,7 @@ compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
                -> IO [Bool]
 compareAnswers outputs ansFilePaths binPath typ
   = case typ of
-      RunTypeUndefined -> return [False]
+      Continued -> return [False]
       Simulate -> compareStringAnswers outputs ansFilePaths
       Minimize -> compareAs Isomorphism outputs ansFilePaths binPath
       Searcher -> compareAs Isomorphism outputs ansFilePaths binPath

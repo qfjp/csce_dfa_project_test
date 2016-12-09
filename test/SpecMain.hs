@@ -3,7 +3,7 @@ module Main where
 import Test.Hspec
 
 import RunType
-import ProgramExecution
+import ProgExecSpec
 import ParseBuilds
 
 main :: IO ()

@@ -1,6 +1,6 @@
 module RunType where
 
-import ProjectTest (RunType(..))
+import ProgramExecution (RunType(..))
 
 import Test.Hspec
 import Test.Hspec.Checkers
@@ -11,7 +11,7 @@ import Test.QuickCheck.Checkers
 instance Arbitrary RunType where
     arbitrary
       = frequency $ map (\x -> (1, return x))
-                        [ RunTypeUndefined, Simulate, Minimize
+                        [ Continued, Simulate, Minimize
                         , Searcher, BoolopComp, BoolopProd, Invhom
                         , Properties ]
 

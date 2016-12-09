@@ -1,6 +1,6 @@
-module ProgramExecution where
+module ProgExecSpec where
 
-import ProjectTest (ProgramExecution(..), RunType(Simulate))
+import ProgramExecution (ProgramExecution(..), RunType(Simulate))
 
 import Control.Monad (ap)
 
