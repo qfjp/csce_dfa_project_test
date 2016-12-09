@@ -29,18 +29,15 @@ parseCommands intro end
           stripCommands = map strip commands
       return stripCommands
 
-parseBuildFile :: Parser ([String], [String])
+parseBuildFile :: Parser ([String], String)
 parseBuildFile
   = do
       skipMany parseIgnore
       buildInstrs <- parseCommands (string "Build:") parseTextThenColon
       runInstrs <- parseCommands (string "Run:") eof
       skipMany parseIgnore
-      let strip = T.unpack . T.strip . T.pack
-          runs = map strip runInstrs
-          builds = map strip buildInstrs
-      when (length runs /= 1) $ fail "Need exactly one run command"
-      return (builds, runs)
+      let runs = head runInstrs
+      return (buildInstrs, runs)
 
 parseCommentOrLine :: Parser (Either String String)
 parseCommentOrLine

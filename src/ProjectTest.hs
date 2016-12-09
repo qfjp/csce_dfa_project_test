@@ -301,7 +301,7 @@ execute h (tests, bins, this) typ
       else do
         parsedFile <- parseFromFile parseBuildFile buildFile
         case parsedFile of
-          Right (builds, runs) -> do
+          Right (builds, run) -> do
             hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
             buildResults' <- sequence <$>
                 mapM (runProc h (Just this) [] . words) builds
@@ -316,7 +316,7 @@ execute h (tests, bins, this) typ
             then failExecution h buildFailures 2 typ
             else do
                 hPutStrLn h $ "Running " ++ show typ ++ "..."
-                let userCmd = words . head $ runs
+                let userCmd = words run
                     testFilesNoPath = map fst . testCases $ typ
                     testFiles = map (map (testDir ++)) testFilesNoPath
                     --cmds = map (\x -> (userCmd, x)) testFiles

@@ -72,7 +72,7 @@ Run: # comment
 # Comment here
 |]
 
-doParseBuild :: String -> Either ParseError ([String], [String])
+doParseBuild :: String -> Either ParseError ([String], String)
 doParseBuild
   = runParser parseBuildFile () ""
 
@@ -81,19 +81,19 @@ parseSpec
   = describe "Build File Parser" $ do
       it "no build command, no indent" $
           doParseBuild simpleNoBuild
-            `shouldBe` Right ([], ["run"])
+            `shouldBe` Right ([], "run")
       it "one build command, no indent" $
           doParseBuild simpleOneBuild
-            `shouldBe` Right (["build"], ["run"])
+            `shouldBe` Right (["build"], "run")
       it "indented commands" $
           doParseBuild indented
-            `shouldBe` Right (["build1", "build2"], ["run"])
+            `shouldBe` Right (["build1", "build2"], "run")
       it "Simple line comments" $
           doParseBuild commented1
-            `shouldBe` Right (["build"], ["run"])
+            `shouldBe` Right (["build"], "run")
       it "Complicated line comments" $
           doParseBuild commented2
-            `shouldBe` Right (["build"], ["run"])
+            `shouldBe` Right (["build"], "run")
       it "Complicated line and end of line comments" $
           doParseBuild commented3
-            `shouldBe` Right (["build"], ["run"])
+            `shouldBe` Right (["build"], "run")
