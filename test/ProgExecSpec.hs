@@ -1,20 +1,13 @@
 module ProgExecSpec where
 
-import ProgramExecution (ProgramExecution(..), RunType(Simulate))
+import ProgramExecution (ProgramExecution(..))
 
 import Control.Monad (ap)
 
 import Test.Hspec
 import Test.Hspec.Checkers
 import Test.QuickCheck
-import Test.QuickCheck.Checkers
 import Test.QuickCheck.Classes
-
-instance (Arbitrary a, Arbitrary b) => Arbitrary (ProgramExecution a b) where
-    arbitrary = PE Simulate <$> arbitrary <*> arbitrary
-
-instance (Eq a, Eq b) => EqProp (ProgramExecution a b) where
-    (=-=) = eq
 
 peSpec :: SpecWith ()
 peSpec

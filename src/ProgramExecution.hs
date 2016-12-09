@@ -11,6 +11,8 @@ module ProgramExecution (
     ) where
 
 import Data.Monoid (Sum(..), (<>))
+import Test.QuickCheck hiding (Result(..))
+import Test.QuickCheck.Checkers
 
 -- | Type for different portions of the project
 data RunType
@@ -33,6 +35,16 @@ instance Monoid RunType where
     Continued `mappend` x = x
     x `mappend` Continued = x
     x `mappend` _ = x
+
+instance Arbitrary RunType where
+    arbitrary
+      = frequency $ map (\x -> (1, return x))
+                        [ Continued, Simulate, Minimize
+                        , Searcher, BoolopComp, BoolopProd, Invhom
+                        , Properties ]
+
+instance EqProp RunType where
+    (=-=) = eq
 
 -- | This converts RunType values into the names given on the project
 -- description
@@ -64,6 +76,12 @@ instance Monoid a => Applicative (ProgramExecution a) where
     pure = PE Simulate mempty
     PE t1 e1 f <*> PE t2 e2 x
       = PE (t1 <> t2) (e1 <> e2) (f x)
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (ProgramExecution a b) where
+    arbitrary = PE Simulate <$> arbitrary <*> arbitrary
+
+instance (Eq a, Eq b) => EqProp (ProgramExecution a b) where
+    (=-=) = eq
 
 instance Monoid a => Monad (ProgramExecution a) where
     return = pure
