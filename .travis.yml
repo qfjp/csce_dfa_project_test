@@ -102,6 +102,8 @@ install:
 script:
 - |
   set -ex
+  stack clean
+  stack build --coverage
   stack --no-terminal --coverage $ARGS test :spec --bench --no-run-benchmarks --haddock --no-haddock-deps
   set +ex
 
