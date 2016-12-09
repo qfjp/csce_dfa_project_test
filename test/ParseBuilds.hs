@@ -76,8 +76,8 @@ doParseBuild :: String -> Either ParseError ([String], [String])
 doParseBuild
   = runParser parseBuildFile () ""
 
-parseSpecs :: SpecWith ()
-parseSpecs
+parseSpec :: SpecWith ()
+parseSpec
   = describe "Build File Parser" $ do
       it "no build command, no indent" $
           doParseBuild simpleNoBuild
