@@ -56,13 +56,16 @@ executable csce-dfa-project-test
 test-suite spec
   default-language:    Haskell2010
   ghc-options:         -Wall
-  other-modules:       ProgramExecution, RunType
+  other-modules:       ProgramExecution, RunType, ParseBuilds
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             SpecMain.hs
+  extensions:          QuasiQuotes
   build-depends:       base >=4.9 && <4.10
                      , hspec >=2.2 && <2.3
                      , hspec-checkers >=0.1 && <0.2
                      , QuickCheck >=2.8 && <2.9
                      , checkers >=0.4 && <0.5
+                     , parsec >=3.1 && <3.2
+                     , raw-strings-qq >= 1.1 && <1.2
                      , csce-dfa-project-test
