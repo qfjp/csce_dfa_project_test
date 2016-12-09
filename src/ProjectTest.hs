@@ -162,6 +162,7 @@ testCases typ
         -> let simIn x = [x ++ ".txt", x ++ "-strings.txt"]
                simOut x = (x ++"-out.txt")
            in makeTests simIn simOut simTestCases
+           --([Char] -> [String]) -> ([Char] -> String) -> [[Char]] -> [([String], String)]
       Minimize
         -> let minIn x = ["nonminimalDFA" ++ x ++ ".txt" ]
                minOut x ="minDFA" ++ x ++ ".txt"
@@ -369,32 +370,50 @@ execute h (tests, bins, this) typ
                       , _errorCount = Sum 0
                       , _result = 1}
 
-checkIsomorphism :: T.Text -> FilePath -> FilePath -> IO Bool
-checkIsomorphism dfaText dfaFile isoChecker
+-- TODO: A lot
+checkIsomorphism :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
+checkIsomorphism dfaText dfaFile binPath isoChecker
   = do
+      let isDfaPath = binPath ++ "/isDFA"
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
           exitPermissions isoChecker
-      isomorphism <- readProcess isoChecker
-                                 [dfaFile] (T.unpack dfaText)
-      let firstLine =  head . lines $ isomorphism
-      return $ firstLine == "The two DFAs are isomorphic."
 
-checkEquivalence :: T.Text -> FilePath -> FilePath -> IO Bool
-checkEquivalence dfaText dfaFile isoChecker
+      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
+      let isDfaResult = head . lines $ isDfa
+      if isDfaResult == "Not a DFA"
+      then return False
+      else do
+        isomorphism <- readProcess isoChecker
+                                   [dfaFile] (T.unpack dfaText)
+        let firstLine =  head . lines $ isomorphism
+        return $ firstLine == "The two DFAs are isomorphic."
+
+checkEquivalence :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
+checkEquivalence dfaText dfaFile binPath isoChecker
   = do
-      tempFilePath <- getCurrentDirectory
-      let dfaFileName = takeFileName dfaFile
-      (tempFname,  tempHandle) <- openTempFile tempFilePath (dfaFileName ++ ".tmp")
-      T.hPutStrLn tempHandle dfaText
-      hClose tempHandle
+      let isDfaPath = binPath ++ "/isDFA"
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
           exitPermissions isoChecker
-      isomorphism <- readProcess isoChecker [dfaFile, tempFname] ""
-      let firstLine =  head . lines $ isomorphism
-      removeFile tempFname
-      return $ firstLine == "The two DFAs are equivalent."
+
+      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
+      let isDfaResult = head . lines $ isDfa
+      if isDfaResult == "Not a DFA"
+      then return False
+      else do
+        tempFilePath <- getCurrentDirectory
+        let dfaFileName = takeFileName dfaFile
+        (tempFname,  tempHandle) <- openTempFile tempFilePath (dfaFileName ++ ".tmp")
+        T.hPutStrLn tempHandle dfaText
+        hClose tempHandle
+        isoCheckPerms <- getPermissions isoChecker
+        unless (readable isoCheckPerms && executable isoCheckPerms) $
+            exitPermissions isoChecker
+        isomorphism <- readProcess isoChecker [dfaFile, tempFname] ""
+        let firstLine =  head . lines $ isomorphism
+        removeFile tempFname
+        return $ firstLine == "The two DFAs are equivalent."
 
 compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
                -> IO [Bool]
@@ -415,7 +434,7 @@ compareAs tag outputs ansFilePaths binPath
   = do
       let outsAndAns = zip outputs ansFilePaths
           isoCheckPath = binPath ++ "/" ++ execChecker
-      mapM (\(o, a) -> checkFunc o a isoCheckPath) outsAndAns
+      mapM (\(o, a) -> checkFunc o a binPath isoCheckPath) outsAndAns
   where
       (execChecker, checkFunc)
         = case tag of
@@ -445,7 +464,6 @@ data Options
     = Options { _selftest :: Bool
               , _testdir :: IO FilePath
               , _progdir :: FilePath
-              , _deleteTemps :: Bool
               , _optionsSet :: Bool
               }
 
@@ -454,7 +472,6 @@ defaultOptions
   = Options { _selftest = False
             , _testdir = defBaseDir
             , _progdir = "."
-            , _deleteTemps = True
             , _optionsSet = False
             }
 

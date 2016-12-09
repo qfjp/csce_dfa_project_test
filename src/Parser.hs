@@ -26,10 +26,23 @@ parseCommands intro end
 parseBuildFile :: Parser ([String], [String])
 parseBuildFile
   = do
+      skipMany parseComment
       buildInstrs <- parseCommands (string "Build:") parseTextThenColon
       runInstrs <- parseCommands (string "Run:") eof
+      skipMany parseComment
       let strip = T.unpack . T.strip . T.pack
           runs = map strip runInstrs
           builds = map strip buildInstrs
       when (length runs /= 1) $ error "Need exactly one run command"
       return (builds, runs)
+
+eof' :: Parser String
+eof'
+  = eof >> return ""
+
+parseComment :: Parser String
+parseComment
+  = do
+      _ <- string "#"
+      comment <- manyTill anyChar (try (string "\n" <|> eof'))
+      return comment
