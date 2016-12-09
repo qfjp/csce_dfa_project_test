@@ -4,6 +4,7 @@ import Control.Monad
 import System.Directory
 import System.IO
 
+import Arguments
 import ProjectTest
 
 main :: IO ()

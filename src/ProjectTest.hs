@@ -30,9 +30,8 @@ import qualified Data.Text.IO as T
 import Control.Concurrent
 import Control.Monad
 
-import System.Console.GetOpt
 import System.Directory
-import System.Environment (getArgs, getProgName, getEnv)
+import System.Environment (getEnv)
 import System.Exit
 import System.IO
 import System.Process
@@ -191,10 +190,6 @@ testCases typ
       makeTests :: (a -> [String]) -> (a -> String) -> [a] -> [([String], String)]
       makeTests inputs answers = map (liftM2 (,) inputs answers)
 
-defBaseDir :: IO FilePath
-defBaseDir
-  = getEnv "HOME" >>=
-      (\h -> return $ h ++ "/public_html/csce355/prog-proj")
 
 -- Holds which programs were implemented and what progress was made on
 -- each:
@@ -447,58 +442,3 @@ compareStringAnswers outputs ansFilePaths
       answers <- mapM T.readFile ansFilePaths
       let results = zipWith (==) outputs answers
       return results
-
-helpMessage :: String
-helpMessage
-  = usageInfo "" options
-
-parseArgs :: IO Options
-parseArgs
-  = do
-      argv <- getArgs
-      case getOpt RequireOrder options argv of
-        (opts, _, []) -> foldlM (flip id) defaultOptions opts
-        (_, _, errs) -> ioError (userError (concat errs))
-
-data Options
-    = Options { _selftest :: Bool
-              , _testdir :: IO FilePath
-              , _progdir :: FilePath
-              , _optionsSet :: Bool
-              }
-
-defaultOptions :: Options
-defaultOptions
-  = Options { _selftest = False
-            , _testdir = defBaseDir
-            , _progdir = "."
-            , _optionsSet = False
-            }
-
-options :: [OptDescr (Options -> IO Options)]
-options
-  = [ Option ['h'] ["help"]      (NoArg $ const printHelp)
-             "print usage information"
-    , Option ['t'] ["single-test"] (ReqArg setSingleTest "DIR")
-             "test program at given directory"
-    , Option ['d'] ["test-suite"] (ReqArg setTestDirectory "DIR")
-             "the location of the test-suite and auxiliary binaries"
-    ]
-
-setTestDirectory :: String -> Options -> IO Options
-setTestDirectory str opts
-  = return $ opts { _testdir = return str, _optionsSet = True }
-
-setSingleTest :: FilePath -> Options -> IO Options
-setSingleTest str opts
-  = return $ opts { _selftest = True, _progdir = str, _optionsSet = True }
-
-printHelp :: IO Options
-printHelp
-  = do
-      progName <- getProgName
-      putStr progName
-      putStr ": "
-      putStrLn "A program to test the CSCE 355 project"
-      putStr helpMessage
-      exitSuccess
