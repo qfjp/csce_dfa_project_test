@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 module ParseBuilds where
 
 import Text.RawString.QQ

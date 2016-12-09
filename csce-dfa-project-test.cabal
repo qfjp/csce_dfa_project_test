@@ -60,7 +60,7 @@ test-suite spec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             SpecMain.hs
-  extensions:          QuasiQuotes
+  --extensions:          QuasiQuotes
   build-depends:       base >=4.9 && <4.10
                      , hspec >=2.2 && <2.3
                      , hspec-checkers >=0.1 && <0.2
