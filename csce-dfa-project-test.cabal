@@ -59,7 +59,7 @@ test-suite spec
   other-modules:       ProgramExecution, RunType
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  main-is:             Main.hs
+  main-is:             SpecMain.hs
   build-depends:       base >=4.9 && <4.10
                      , hspec >=2.2 && <2.3
                      , hspec-checkers >=0.1 && <0.2
