@@ -8,6 +8,5 @@ LINK=link.exe
 OBJOPTS=/c
 
 ISDFA_OUT=/OUT:isDFA.exe
-export
 
 !INCLUDE build.mk
