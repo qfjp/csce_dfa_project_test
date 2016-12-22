@@ -10,4 +10,4 @@ OBJOPTS=/c
 ISDFA_OUT=/OUT:isDFA.exe
 export
 
-include build.mk
+!INCLUDE build.mk
