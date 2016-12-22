@@ -1,0 +1,13 @@
+REMOVE=del
+
+MAKE=nmake
+
+CC=cl.exe
+
+LINK=link.exe
+OBJOPTS=/c
+
+ISDFA_OUT=/OUT:isDFA.exe
+export
+
+include build.mk
