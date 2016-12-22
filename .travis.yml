@@ -102,7 +102,8 @@ install:
 script:
 - |
   set -ex
-  stack --no-terminal $ARGS test :spec --bench --no-run-benchmarks --haddock --no-haddock-deps --coverage
+  #stack --no-terminal $ARGS test :spec --bench --no-run-benchmarks --haddock --no-haddock-deps --coverage
+  make test
   set +ex
 
 after_script:
