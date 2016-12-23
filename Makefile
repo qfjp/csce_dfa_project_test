@@ -7,7 +7,24 @@ CC=gcc
 LINK=gcc
 OBJOPTS=-c
 
-ISDFA_OUT=-o isDFA
+
+FENDIR=c_files
+SRC=$(wildcard $(FENDIR)/*c)
+OBJ=$(SRC:%.c=%.o)
+INC=$(wildcard $(FENDIR)/*h)
+
+ISDFA=$(FENDIR)/isDFA
+
 export
 
-include build.mk
+all : Main isDFA
+
+clean : c-clean hs-clean
+
+test : hs-test
+
+.PHONY : clean test
+
+include fenc.mk
+include haskell.mk
+
