@@ -5,6 +5,7 @@ import System.Directory
 import System.IO
 
 import Arguments
+import ExternChecks (exitPermissions)
 import ProgramExecution
 import ProjectTest
 

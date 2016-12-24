@@ -16,6 +16,7 @@ module ProjectTest where
  -  $ ProjectTest.hs -t [your-submission-root-directory] -d [location of bin and test-suite]
  -}
 
+import ExternChecks
 import Parser
 import ProgramExecution
 
@@ -128,12 +129,6 @@ testCases typ
   where
       makeTests :: (a -> [String]) -> (a -> String) -> [a] -> [([String], String)]
       makeTests inputs answers = map (liftM2 (,) inputs answers)
-
-exitPermissions :: FilePath -> IO ()
-exitPermissions path
-  = do
-      putStrLn $ "Bad permissions on file: " ++ path
-      exitWith (ExitFailure 1)
 
 compete :: [IO a] -> IO a
 compete actions
@@ -277,51 +272,6 @@ execute h (tests, bins, this) typ
             return PE { _tag = typ
                       , _errorCount = Sum 0
                       , _result = 1}
-
--- TODO: A lot
-checkIsomorphism :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
-checkIsomorphism dfaText dfaFile binPath isoChecker
-  = do
-      let isDfaPath = binPath ++ "/isDFA"
-      isoCheckPerms <- getPermissions isoChecker
-      unless (readable isoCheckPerms && executable isoCheckPerms) $
-          exitPermissions isoChecker
-
-      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
-      let isDfaResult = head . lines $ isDfa
-      if isDfaResult == "Not a DFA"
-      then return False
-      else do
-        isomorphism <- readProcess isoChecker
-                                   [dfaFile] (T.unpack dfaText)
-        let firstLine =  head . lines $ isomorphism
-        return $ firstLine == "The two DFAs are isomorphic."
-
-checkEquivalence :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
-checkEquivalence dfaText dfaFile binPath isoChecker
-  = do
-      let isDfaPath = binPath ++ "/isDFA"
-      isoCheckPerms <- getPermissions isoChecker
-      unless (readable isoCheckPerms && executable isoCheckPerms) $
-          exitPermissions isoChecker
-
-      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
-      let isDfaResult = head . lines $ isDfa
-      if isDfaResult == "Not a DFA"
-      then return False
-      else do
-        tempFilePath <- getCurrentDirectory
-        let dfaFileName = takeFileName dfaFile
-        (tempFname,  tempHandle) <- openTempFile tempFilePath (dfaFileName ++ ".tmp")
-        T.hPutStrLn tempHandle dfaText
-        hClose tempHandle
-        isoCheckPerms <- getPermissions isoChecker
-        unless (readable isoCheckPerms && executable isoCheckPerms) $
-            exitPermissions isoChecker
-        isomorphism <- readProcess isoChecker [dfaFile, tempFname] ""
-        let firstLine =  head . lines $ isomorphism
-        removeFile tempFname
-        return $ firstLine == "The two DFAs are equivalent."
 
 compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
                -> IO [Bool]
