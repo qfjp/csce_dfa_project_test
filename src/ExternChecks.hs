@@ -22,18 +22,26 @@ exitPermissions path
       putStrLn $ "Bad permissions on file: " ++ path
       exitWith (ExitFailure 1)
 
+checkDfa :: T.Text -> FilePath -> IO Bool
+checkDfa dfaText binPath
+  = do
+      let isDfaPath = binPath ++ "/isDFA"
+      dfaCheckPerms <- getPermissions isDfaPath
+      unless (readable dfaCheckPerms && executable dfaCheckPerms) $
+          exitPermissions isDfaPath
+      (_, isDfa, isDfaErr) <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
+      let isDfaResult = head . lines $ isDfa
+      return . not $ isDfaResult == "Not a DFA"
+
 -- TODO: A lot
 checkIsomorphism :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
 checkIsomorphism dfaText dfaFile binPath isoChecker
   = do
-      let isDfaPath = binPath ++ "/isDFA"
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
           exitPermissions isoChecker
-
-      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
-      let isDfaResult = head . lines $ isDfa
-      if isDfaResult == "Not a DFA"
+      isDfa <- checkDfa dfaText binPath
+      if not isDfa
       then return False
       else do
         isomorphism <- readProcess isoChecker
@@ -44,14 +52,11 @@ checkIsomorphism dfaText dfaFile binPath isoChecker
 checkEquivalence :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
 checkEquivalence dfaText dfaFile binPath isoChecker
   = do
-      let isDfaPath = binPath ++ "/isDFA"
       isoCheckPerms <- getPermissions isoChecker
       unless (readable isoCheckPerms && executable isoCheckPerms) $
           exitPermissions isoChecker
-
-      (_, isDfa, isDfaErr)  <- readProcessWithExitCode isDfaPath [] (T.unpack dfaText)
-      let isDfaResult = head . lines $ isDfa
-      if isDfaResult == "Not a DFA"
+      isDfa <- checkDfa dfaText binPath
+      if not isDfa
       then return False
       else do
         tempFilePath <- getCurrentDirectory
