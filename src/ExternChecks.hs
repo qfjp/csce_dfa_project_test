@@ -14,7 +14,13 @@ import System.Directory
 import System.Exit (ExitCode(ExitFailure), exitWith)
 import System.FilePath (takeFileName)
 import System.IO (hClose, openTempFile)
+import System.Info (os)
 import System.Process (readProcess, readProcessWithExitCode)
+
+binExtension :: String
+binExtension = if os == "mingw32"
+               then ".exe"
+               else ""
 
 exitPermissions :: FilePath -> IO ()
 exitPermissions path
@@ -25,7 +31,7 @@ exitPermissions path
 checkDfa :: T.Text -> FilePath -> IO Bool
 checkDfa dfaText binPath
   = do
-      let isDfaPath = binPath ++ "/isDFA"
+      let isDfaPath = binPath ++ "/isDFA" ++ binExtension
       dfaCheckPerms <- getPermissions isDfaPath
       unless (readable dfaCheckPerms && executable dfaCheckPerms) $
           exitPermissions isDfaPath
