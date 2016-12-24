@@ -21,7 +21,7 @@ all : Main isDFA
 
 clean : c-clean hs-clean
 
-test : hs-test
+test : isDFA hs-test
 
 .PHONY : clean test
 
