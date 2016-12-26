@@ -23,6 +23,10 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
+source-repository head
+  type: git
+  location: https://github.com/qfjp/csce_dfa_project_test
+
 library
   hs-source-dirs:      src
   exposed-modules:     Arguments
