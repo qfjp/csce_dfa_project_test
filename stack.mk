@@ -1,7 +1,7 @@
 stack-all :
 	stack build --coverage
 
-stack-test :
+stack-test : isDFA
 	echo "" | stack --no-terminal ${ARGS} test ":spec" --bench --no-run-benchmarks --haddock --no-haddock-deps --coverage
 
 stack-clean :

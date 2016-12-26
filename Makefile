@@ -21,7 +21,7 @@ all : isDFA cabal-all stack-all
 
 clean : c-clean cabal-clean stack-clean
 
-test : isDFA cabal-test stack-test
+test : cabal-test stack-test
 
 .PHONY : all clean test
 

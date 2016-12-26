@@ -1,7 +1,7 @@
 cabal-all : cabal-init
 	cabal build
 
-cabal-test : cabal-init
+cabal-test : isDFA cabal-init
 	cabal test
 
 cabal-clean : cabal-init
