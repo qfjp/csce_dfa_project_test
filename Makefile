@@ -17,14 +17,14 @@ ISDFA=$(FENDIR)/isDFA
 
 export
 
-all : Main isDFA
+all : isDFA cabal-all stack-all
 
-clean : c-clean hs-clean
+clean : c-clean cabal-clean stack-clean
 
-test : isDFA hs-test
+test : isDFA cabal-test stack-test
 
-.PHONY : clean test
+.PHONY : all clean test
 
 include fenc.mk
-include haskell.mk
-
+include stack.mk
+include cabal.mk
