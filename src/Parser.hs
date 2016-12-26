@@ -7,6 +7,7 @@ parsing and the output of user functions is done here.
 -}
 module Parser (parseBuildFile) where
 
+import Control.Applicative ((<$>))
 import Control.Monad (when)
 import Data.Either (rights)
 
