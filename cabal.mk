@@ -2,7 +2,7 @@ cabal-all : cabal-init
 	cabal build
 	cabal copy
 
-cabal-test : cabal-init
+cabal-test : cabal-init cabal-all
 	cabal configure --enable-tests --enable-benchmarks -v2
 	cabal test
 	cabal check
