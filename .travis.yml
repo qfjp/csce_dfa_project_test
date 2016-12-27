@@ -136,13 +136,11 @@ install:
   set -ex
   case "$BUILD" in
    stack)
-     stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
      ;;
   cabal)
     cabal --version
     travis_retry cabal update
-    cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
-    make isDFA
+    make cabal-all
     ;;
   esac
   set +ex
@@ -155,12 +153,7 @@ script:
       make ARGS="$ARGS" stack-test
       ;;
     cabal)
-      cabal configure --enable-tests --enable-benchmarks -v2;
-      cabal build;
-      cabal test;
-      cabal check;
-      cabal sdist;
-      cabal copy;
+      make cabal-test
       ;;
   esac
   set +ex
