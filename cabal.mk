@@ -7,10 +7,11 @@ cabal-test : cabal-init
 	cabal test
 	cabal check
 
-cabal-clean : cabal-init
+cabal-clean :
 	cabal clean
 
 cabal-init : isDFA
 	cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
+	cabal configure
 
 .PHONY : cabal-all cabal-clean cabal-init cabal-test
