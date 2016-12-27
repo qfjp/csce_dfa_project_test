@@ -10,7 +10,8 @@ module ProgramExecution (
     , resultToText
     ) where
 
-import Data.Monoid (Sum(..), (<>))
+import Control.Applicative (Applicative, (<$>), (<*>), pure)
+import Data.Monoid (Monoid (..), Sum(..), (<>))
 import Test.QuickCheck hiding (Result(..))
 import Test.QuickCheck.Checkers
 
