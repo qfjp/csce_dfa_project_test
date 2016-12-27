@@ -1,13 +1,16 @@
 cabal-all : cabal-init
 	cabal build
+	cabal copy
 
-cabal-test : isDFA cabal-init
+cabal-test : cabal-init
+	cabal configure --enable-tests --enable-benchmarks -v2
 	cabal test
+	cabal check
 
 cabal-clean : cabal-init
 	cabal clean
 
-cabal-init :
-	cabal sandbox init
+cabal-init : isDFA
+	cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
 
 .PHONY : cabal-all cabal-clean cabal-init cabal-test
