@@ -77,10 +77,6 @@ matrix:
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Build on OS X in addition to Linux
-  #- env: BUILD=stack ARGS=""
-  #  compiler: ": #stack default osx"
-  #  os: osx
-  #
   - env: BUILD=stack ARGS="--resolver lts-6.26"
     compiler: ": #stack 6.26 (ghc 7.10.3)"
     os: osx
@@ -99,9 +95,6 @@ matrix:
 
   allow_failures:
   - env: BUILD=stack ARGS="--resolver nightly"
-  - env: BUILD=cabal GHCVER=7.4.2 CABALVER=1.16 HAPPYVER=1.19.5 ALEXVER=3.1.7
-  - env: BUILD=cabal GHCVER=7.6.3 CABALVER=1.16 HAPPYVER=1.19.5 ALEXVER=3.1.7
-  - env: BUILD=cabal GHCVER=7.8.4 CABALVER=1.18 HAPPYVER=1.19.5 ALEXVER=3.1.7
   - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22 HAPPYVER=1.19.5 ALEXVER=3.1.7
   - env: BUILD=cabal GHCVER=8.0.1 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
   - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
@@ -149,6 +142,7 @@ install:
     cabal --version
     travis_retry cabal update
     cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
+    make isDFA
     ;;
   esac
   set +ex
@@ -158,7 +152,6 @@ script:
   set -ex
   case "$BUILD" in
     stack)
-     #stack --no-terminal $ARGS test :spec --bench --no-run-benchmarks --haddock --no-haddock-deps --coverage
       make ARGS="$ARGS" stack-test
       ;;
     cabal)
@@ -168,31 +161,6 @@ script:
       cabal check;
       cabal sdist;
       cabal copy;
-      #cd test/integration;
-      #true stack setup --compiler=ghc-$GHCVER;
-      #true stack test --compiler=ghc-$GHCVER;
-      #cd ../..;
-      #SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
-      #(cd dist && cabal install --force-reinstalls "$SRC_TGZ")
-
-      #cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-      #cabal test
-
-      #ORIGDIR=$(pwd)
-      #for dir in $PACKAGES
-      #do
-      #  #cd $dir
-      #  #cabal check || [ "$CABALVER" == "1.16" ]
-      #  #cabal sdist
-      #  #PKGVER=$(cabal info . | awk '{print $2;exit}')
-      #  #SRC_TGZ=$PKGVER.tar.gz
-      #  #cd dist
-      #  #tar zxfv "$SRC_TGZ"
-      #  #cd "$PKGVER"
-      #  #cabal configure --enable-tests
-      #  #cabal build
-      #  #cd $ORIGDIR
-      #done
       ;;
   esac
   set +ex
