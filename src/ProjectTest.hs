@@ -17,7 +17,7 @@ module ProjectTest where
  -}
 
 import ExternChecks
-import Parser
+import Parser.Build
 import ProgramExecution
 
 import Text.Parsec.String (parseFromFile)

@@ -5,7 +5,7 @@ Description : File parsing functions
 This module controls various parsing related functions. Build file
 parsing and the output of user functions is done here.
 -}
-module Parser (parseBuildFile) where
+module Parser.Build (parseBuildFile) where
 
 import Control.Applicative ((<$>))
 import Control.Monad (when)

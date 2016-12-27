@@ -3,7 +3,7 @@ module ParseBuilds where
 
 import Text.RawString.QQ
 import Text.Parsec
-import Parser
+import Parser.Build
 
 import Test.Hspec
 
