@@ -4,7 +4,7 @@ cabal-all : cabal-init
 	cabal build
 	cabal copy
 
-cabal-test : cabal-init cabal-all
+cabal-test : cabal-init cabal-test-init cabal-all
 	cabal test
 	cabal check
 
@@ -16,6 +16,6 @@ cabal-init : isDFA
 	cabal configure
 
 cabal-test-init:
-	cabal configure --enable-tests --enable-benchmarks -v2
+	cabal configure --enable-tests --enable-benchmarks
 
 .PHONY : cabal-all cabal-clean cabal-init cabal-test cabal-test-init
