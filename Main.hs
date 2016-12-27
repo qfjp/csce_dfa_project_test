@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Applicative ((<$>))
 import Control.Monad
 import System.Directory
 import System.IO
