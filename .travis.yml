@@ -146,15 +146,22 @@ install:
    stack)
      stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
      ;;
-   cabal)
-     cabal --version
-     travis_retry cabal update
+  cabal)
+    cabal --version
+    travis_retry cabal update
 
-     # Get the list of packages from the stack.yaml file
-     PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
+    # Get the list of packages from the stack.yaml file
+    #PACKAGES=$(stack --install-ghc query locals | grep '^ *path' | sed 's@^ *path:@@')
 
-     cabal install --reinstall --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-     ;;
+    #cabal install --reinstall --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+    rm -f $HOME/.cabal/bin/stack;
+    echo "stack is located at $(which stack)";
+    stack --version;
+    rm -f $(stack --compiler=ghc-$GHCVER path --dist-dir)/stack-*.tar.gz &&
+    stack --system-ghc --compiler=ghc-$GHCVER sdist --pvp-bounds=both &&
+    tar xf $(stack --system-ghc --compiler=ghc-$GHCVER path --dist-dir)/stack-*.tar.gz --wildcards --strip-components=1 '*/stack.cabal' &&
+    cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1
+    ;;
   esac
   set +ex
 
@@ -167,8 +174,21 @@ script:
       make ARGS="$ARGS" stack-test
       ;;
     cabal)
-      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
-      cabal test
+      cabal configure --enable-tests --enable-benchmarks -v2 --ghc-options="-O0 -Werror";
+      cabal build;
+      cabal test;
+      cabal check;
+      cabal sdist;
+      cabal copy;
+      cd test/integration;
+      true stack setup --compiler=ghc-$GHCVER;
+      true stack test --compiler=ghc-$GHCVER;
+      cd ../..;
+      SRC_TGZ=$(cabal info . | awk '{print $2;exit}').tar.gz &&
+      (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
+
+      #cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      #cabal test
 
       #ORIGDIR=$(pwd)
       #for dir in $PACKAGES
