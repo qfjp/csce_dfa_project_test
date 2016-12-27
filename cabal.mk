@@ -1,5 +1,5 @@
 CABALVER := $(shell cabal --numeric-version)
-SANDBOX := ""
+SANDBOX := true
 ifneq ($(CABALVER), 1.16.0.2)
   SANDBOX := cabal sandbox init
 endif
