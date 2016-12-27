@@ -1,4 +1,8 @@
 CABALVER := $(shell cabal --numeric-version)
+SANDBOX := ""
+ifneq (1, 1.16.0.2)
+  SANDBOX := cabal sandbox init
+endif
 
 cabal-all : cabal-init
 	cabal build
@@ -12,6 +16,7 @@ cabal-clean :
 	cabal clean
 
 cabal-init : isDFA
+	$(SANDBOX)
 	cabal install --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
 	cabal configure
 
