@@ -2,6 +2,7 @@ module ProgExecSpec where
 
 import ProgramExecution (ProgramExecution(..))
 
+import Control.Applicative ((<*>))
 import Control.Monad (ap)
 
 import Test.Hspec
