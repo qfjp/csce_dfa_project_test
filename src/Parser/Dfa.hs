@@ -4,7 +4,7 @@ Description : Module to parse a Dfa
 
 Error-reporting Dfa parse functions.
 -}
-module Parser.Dfa (parseDfa) where
+module Parser.Dfa (doParseDfa, parseDfa) where
 
 import Control.Applicative ((<$>))
 
@@ -12,6 +12,7 @@ import Debug.Trace
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 import Data.Dfa (Dfa(..))
 import Data.Maybe
@@ -20,6 +21,10 @@ import Control.Monad
 
 import Text.Parsec
 import Text.Parsec.String
+
+doParseDfa :: T.Text -> Either ParseError Dfa
+doParseDfa
+  = runParser parseDfa () "" . T.unpack
 
 -- | A Dfa parser.
 parseDfa :: Parser Dfa

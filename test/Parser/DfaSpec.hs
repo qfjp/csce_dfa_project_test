@@ -130,16 +130,16 @@ dfaSpec
               isLeft (doParseDfa oorTransTable) `shouldBe` True
       describe "DFA Verification" $ do
           it "Even # of 1's" $
-              checkDfa dfa1 "c_files" `shouldReturn` True
+              checkDfa dfa1 `shouldBe` True
           it "Noninteger states" $
-              checkDfa badNumberOfStates "c_files" `shouldReturn` False
+              checkDfa badNumberOfStates `shouldBe` False
           it "Negative states" $
-              checkDfa negNumberOfStates "c_files" `shouldReturn` False
+              checkDfa negNumberOfStates `shouldBe` False
           --it "Noninteger accept states" $ -- TODO: Fix isDFA
           --    checkDfa badAcceptStates "c_files" `shouldReturn` False
           it "Out of range accept states" $
-              checkDfa oorAcceptStates "c_files" `shouldReturn` False
+              checkDfa oorAcceptStates `shouldBe` False
           it "Noninteger transition table" $
-              checkDfa badTransTable "c_files" `shouldReturn` False
+              checkDfa badTransTable `shouldBe` False
           it "Out of Range transition table" $
-              checkDfa oorTransTable "c_files" `shouldReturn` False
+              checkDfa oorTransTable `shouldBe` False
