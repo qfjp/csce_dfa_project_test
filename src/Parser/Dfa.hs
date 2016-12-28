@@ -6,6 +6,8 @@ Error-reporting Dfa parse functions.
 -}
 module Parser.Dfa (parseDfa) where
 
+import Control.Applicative ((<$>))
+
 import Debug.Trace
 
 import qualified Data.Map.Strict as M

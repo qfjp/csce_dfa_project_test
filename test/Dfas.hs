@@ -6,7 +6,6 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 
 import Data.Dfa (Dfa(..))
-import Data.Either (isLeft)
 
 import ExternChecks (checkDfa)
 
@@ -18,6 +17,10 @@ import Text.Parsec
 import Text.RawString.QQ
 
 import Test.Hspec
+
+isLeft :: Either a b -> Bool
+isLeft (Left _) = True
+isLeft _ = False
 
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
