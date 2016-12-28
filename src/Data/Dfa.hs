@@ -7,7 +7,7 @@ useful transformations.
 -}
 module Data.Dfa (Dfa(..), hPrintDfa, printDfa, hPrintLst) where
 
-import qualified Data.Map.Strict as M
+import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Data.Maybe (fromMaybe)
