@@ -1,3 +1,10 @@
+{-|
+Module      : ProgramExecution
+Description : Types for the test-run data
+
+This module stores the representation of a Dfa, and provides some
+useful transformations.
+-}
 module ProgramExecution (
     -- * Program Execution Container
       ProgramExecution(..)
@@ -99,6 +106,7 @@ showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
       " execution errors"
   where result = toEnum . fromEnum $ r
 
+-- | The status of the test run.
 data Result
   -- | not implemented at all ($prog.txt file does not exist)
   = NotImplemented

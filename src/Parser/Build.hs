@@ -1,5 +1,5 @@
 {-|
-Module      : Parser
+Module      : Parser.Build
 Description : File parsing functions
 
 This module controls various parsing related functions. Build file
