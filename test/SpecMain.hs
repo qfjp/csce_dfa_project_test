@@ -2,9 +2,9 @@ module Main where
 
 import Test.Hspec
 
-import Dfas
 import RunType
 import Parser.BuildSpec
+import Parser.DfaSpec
 import ProgExecSpec
 
 main :: IO ()

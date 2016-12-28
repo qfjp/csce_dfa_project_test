@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Dfas where
+module Parser.DfaSpec where
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S

@@ -69,7 +69,7 @@ executable csce-dfa-project-test
 test-suite spec
   default-language:    Haskell2010
   ghc-options:         -Wall
-  other-modules:       Dfas
+  other-modules:       Parser.DfaSpec
                      , Parser.BuildSpec
                      , ProgExecSpec
                      , RunType
