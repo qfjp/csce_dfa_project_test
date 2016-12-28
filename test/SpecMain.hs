@@ -4,7 +4,7 @@ import Test.Hspec
 
 import Dfas
 import RunType
-import ParseBuilds
+import Parser.BuildSpec
 import ProgExecSpec
 
 main :: IO ()

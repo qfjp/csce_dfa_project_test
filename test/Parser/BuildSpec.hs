@@ -1,5 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
-module ParseBuilds where
+module Parser.BuildSpec where
 
 import Text.RawString.QQ
 import Text.Parsec
