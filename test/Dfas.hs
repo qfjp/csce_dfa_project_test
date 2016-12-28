@@ -2,13 +2,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Dfas where
 
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
+
+import Data.Dfa (Dfa(..))
+import Data.Either (isLeft)
+
 import ExternChecks (checkDfa)
+
+import Parser.Dfa (parseDfa)
 
 import qualified Data.Text as T
 
+import Text.Parsec
 import Text.RawString.QQ
 
 import Test.Hspec
+
+doParseDfa :: T.Text -> Either ParseError Dfa
+doParseDfa
+  = runParser parseDfa () "" . T.unpack
 
 dfa1 :: T.Text
 dfa1
@@ -19,6 +32,13 @@ Alphabet: 01
 0 1
 1 0
 |]
+
+dfa1' :: Dfa
+dfa1' = Dfa
+         2
+         (S.fromList ['0', '1'])
+         (M.fromList [((0, '0'), 0), ((0, '1'), 1), ((1, '0'), 1), ((1, '1'), 0)])
+         (S.fromList [1])
 
 badNumberOfStates :: T.Text
 badNumberOfStates
@@ -80,20 +100,43 @@ Alphabet: 01
 2 0
 |]
 
+--data Dfa
+--    = Dfa { _Q :: Int
+--          , _σ :: S.Set Char
+--          , _δ :: M.Map (Int, Char) Int
+--          , _F :: S.Set Int
+--          }
+--    deriving Show
 dfaSpec :: SpecWith ()
 dfaSpec
-  = describe "DFA Verification" $ do
-      it "Even # of 1's" $
-          checkDfa dfa1 "c_files" `shouldReturn` True
-      it "Noninteger states" $
-          checkDfa badNumberOfStates "c_files" `shouldReturn` False
-      it "Negative states" $
-          checkDfa negNumberOfStates "c_files" `shouldReturn` False
-      --it "Noninteger accept states" $ -- TODO: Fix isDFA
-      --    checkDfa badAcceptStates "c_files" `shouldReturn` False
-      it "Out of range accept states" $
-          checkDfa oorAcceptStates "c_files" `shouldReturn` False
-      it "Noninteger transition table" $
-          checkDfa badTransTable "c_files" `shouldReturn` False
-      it "Out of Range transition table" $
-          checkDfa oorTransTable "c_files" `shouldReturn` False
+  = do
+      describe "DFA Parser" $ do
+          it "Even # of 1's" $
+              doParseDfa dfa1 `shouldBe` Right dfa1'
+          it "Noninteger states" $ do
+              isLeft (doParseDfa badNumberOfStates) `shouldBe` True
+          it "Negative states" $
+              isLeft (doParseDfa negNumberOfStates) `shouldBe` True
+          --it "Noninteger accept states" $ -- TODO: Fix isDFA
+          --    checkDfa badAcceptStates "c_files" `shouldReturn` False
+          it "Out of range accept states" $
+              isLeft (doParseDfa oorAcceptStates) `shouldBe` True
+          it "Noninteger transition table" $
+              isLeft (doParseDfa badTransTable) `shouldBe` True
+          it "Out of Range transition table" $
+              isLeft (doParseDfa oorTransTable) `shouldBe` True
+      describe "DFA Verification" $ do
+          it "Even # of 1's" $
+              checkDfa dfa1 "c_files" `shouldReturn` True
+          it "Noninteger states" $
+              checkDfa badNumberOfStates "c_files" `shouldReturn` False
+          it "Negative states" $
+              checkDfa negNumberOfStates "c_files" `shouldReturn` False
+          --it "Noninteger accept states" $ -- TODO: Fix isDFA
+          --    checkDfa badAcceptStates "c_files" `shouldReturn` False
+          it "Out of range accept states" $
+              checkDfa oorAcceptStates "c_files" `shouldReturn` False
+          it "Noninteger transition table" $
+              checkDfa badTransTable "c_files" `shouldReturn` False
+          it "Out of Range transition table" $
+              checkDfa oorTransTable "c_files" `shouldReturn` False
