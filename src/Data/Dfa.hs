@@ -8,16 +8,18 @@ useful transformations.
 -}
 module Data.Dfa (Dfa(..), hPrintDfa, printDfa, showDfa) where
 
-import           Control.Monad   (join)
+import           Control.Applicative (Applicative)
+import           Control.Monad       (join)
 
-import qualified Data.Map        as M
-import           Data.Maybe      (fromMaybe)
-import           Data.Monoid     ((<>))
-import qualified Data.Set        as S
-import           Data.Text       (Text, pack)
-import           Data.Text.IO    (hPutStr, hPutStrLn)
+import qualified Data.Map            as M
+import           Data.Maybe          (fromMaybe)
+import           Data.Monoid         ((<>))
+import qualified Data.Set            as S
+import           Data.Text           (Text, pack)
+import           Data.Text.IO        (hPutStr, hPutStrLn)
+import           Data.Traversable    (sequenceA)
 
-import           System.IO       (Handle, stdout)
+import           System.IO           (Handle, stdout)
 
 import           Test.QuickCheck
 
@@ -30,6 +32,10 @@ data Dfa
           , _F :: S.Set Int
           }
     deriving (Eq, Show)
+
+-- TODO : Remove when we no longer have to support ghc 7.8
+sequencePair :: Applicative f => (a, f b) -> f (a, b)
+sequencePair (a, b) = fmap ((,) a) b
 
 instance Arbitrary Dfa where
     arbitrary
@@ -52,7 +58,7 @@ instance Arbitrary Dfa where
                     gensByRow = map (\x -> zip x (repeat $ elements states)) keys
                     gens :: [((Int, Char), Gen Int)]
                     gens = join gensByRow
-                mapAsList <- sequenceA . map sequenceA $ gens
+                mapAsList <- sequenceA . map sequencePair $ gens
                 return $ M.fromList mapAsList
 
 -- | Print a Dfa according to the provided specification.
