@@ -9,7 +9,7 @@ useful transformations.
 module Data.Dfa (Dfa(..), hPrintDfa, printDfa, showDfa) where
 
 import           Control.Applicative (Applicative)
-import           Control.Monad       (join)
+import           Control.Monad       (filterM, join)
 
 import qualified Data.Map            as M
 import           Data.Maybe          (fromMaybe)
@@ -21,8 +21,8 @@ import           Data.Traversable    (sequenceA)
 
 import           System.IO           (Handle, stdout)
 
-import           Test.QuickCheck     (Arbitrary, Gen, arbitrary, elements,
-                                      sublistOf, suchThat)
+import           Test.QuickCheck     (Arbitrary, Gen, arbitrary, choose,
+                                      elements, suchThat)
 
 -- | A representation of the Dfa as a 4-tuple (the set of states should
 -- always be between 0 and Q).
@@ -36,7 +36,12 @@ data Dfa
 
 -- TODO : Remove when we no longer have to support ghc 7.8
 sequencePair :: Applicative f => (a, f b) -> f (a, b)
-sequencePair (a, b) = fmap ((,) a) b
+sequencePair (a, b)
+  = fmap ((,) a) b
+
+sublistOf :: [a] -> Gen [a]
+sublistOf xs
+  = filterM (\_ -> choose (False, True)) xs
 
 instance Arbitrary Dfa where
     arbitrary
