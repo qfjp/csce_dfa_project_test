@@ -21,7 +21,8 @@ import           Data.Traversable    (sequenceA)
 
 import           System.IO           (Handle, stdout)
 
-import           Test.QuickCheck
+import           Test.QuickCheck     (Arbitrary, Gen, arbitrary, elements,
+                                      sublistOf, suchThat)
 
 -- | A representation of the Dfa as a 4-tuple (the set of states should
 -- always be between 0 and Q).
