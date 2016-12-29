@@ -45,6 +45,7 @@ writeThenRead dfa
        hPrintDfa h dfa
        hClose h
        result <- parseFromFile parseDfa path
+       seq result (return ())
        removeFile path
        return result
 
