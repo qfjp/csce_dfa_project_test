@@ -40,8 +40,8 @@ sequencePair (a, b)
   = fmap ((,) a) b
 
 sublistOf :: [a] -> Gen [a]
-sublistOf xs
-  = filterM (\_ -> choose (False, True)) xs
+sublistOf
+  = filterM (\_ -> choose (False, True))
 
 instance Arbitrary Dfa where
     arbitrary
