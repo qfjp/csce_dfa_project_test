@@ -52,20 +52,20 @@ matrix:
 
   # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
   # variable, such as using --stack-yaml to point to a different file.
-  - env: BUILD=stack ARGS="--stack-yaml stack-2.yaml --resolver lts-2"
+  - env: BUILD=stack GHCVER=7.8.4 ARGS="--stack-yaml stack-2.yaml --resolver lts-2"
     compiler: ": #stack 2 (ghc 7.8.4)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-3"
+  - env: BUILD=stack GHCVER=7.10.2 ARGS="--resolver lts-3"
     compiler: ": #stack 3 (ghc 7.10.2)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-6.26"
-    compiler: ": #stack 6.26 (ghc 7.10.3)"
+  - env: BUILD=stack GHCVER=7.10.3 ARGS="--resolver lts-6"
+    compiler: ": #stack 6 (ghc 7.10.3)"
     addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-7.12"
-    compiler: ": #stack 7.12 (ghc 8.0.1)"
+  - env: BUILD=stack GHCVER=8.0.1 ARGS="--resolver lts-7"
+    compiler: ": #stack 7 (ghc 8.0.1)"
     addons: {apt: {packages: [ghc-8.0.1], sources: [hvr-ghc]}}
 
   - env: BUILD=stack ARGS=""
@@ -77,12 +77,12 @@ matrix:
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Build on OS X in addition to Linux
-  - env: BUILD=stack ARGS="--resolver lts-6.26"
-    compiler: ": #stack 6.26 (ghc 7.10.3)"
+  - env: BUILD=stack ARGS="--resolver lts-6"
+    compiler: ": #stack 6 (ghc 7.10.3)"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-7.12"
-    compiler: ": #stack 7.12 (ghc 8.0.1) osx"
+  - env: BUILD=stack ARGS="--resolver lts-7"
+    compiler: ": #stack 7 (ghc 8.0.1) osx"
     os: osx
 
   - env: BUILD=stack ARGS=""
@@ -157,5 +157,10 @@ script:
   set +ex
 
 after_script:
-- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-7.10.3.tar.bz2 | tar -xj
-- ./shc csce-dfa-project-test spec
+- |
+  set -ex
+  if [ "x$GHCVER" = "7.8.4" ] || [ "x$GHCVER" = "x7.10.3" ] || [ "x$GHCVER" = "x8.0.1"]; then
+    travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-$GHCVER.tar.bz2 | tar -xj
+    ./shc csce-dfa-project-test spec
+  fi
+  set +ex
