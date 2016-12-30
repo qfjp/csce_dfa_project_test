@@ -157,5 +157,5 @@ script:
   set +ex
 
 after_script:
--- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-7.10.3.tar.bz2 | tar -xj
--- ./shc csce-dfa-project-test spec
+- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-7.10.3.tar.bz2 | tar -xj
+- ./shc csce-dfa-project-test spec
