@@ -28,7 +28,7 @@ import           Test.QuickCheck     (Arbitrary, Gen, arbitrary, choose,
 -- always be between 0 and Q).
 data Dfa
     = Dfa { _Q :: Int
-          , _σ :: S.Set Char
+          , _Σ :: S.Set Char
           , _δ :: M.Map (Int, Char) Int
           , _F :: S.Set Int
           }
@@ -85,7 +85,7 @@ showDfa :: Dfa -> Text
 showDfa dfa
   = ("Number of states: " <> (showT . _Q $ dfa) <> "\n")
     <> ("Accepting States: " <> (showLst . S.toAscList . _F $ dfa) <> "\n")
-    <> "Alphabet: " <> (pack . S.toAscList . _σ $ dfa) <> "\n"
+    <> "Alphabet: " <> (pack . S.toAscList . _Σ $ dfa) <> "\n"
     <>  showTransFunction dfa
 
 -- | Convert the transition function to a string as per the
@@ -99,7 +99,7 @@ showTransFunction dfa'
       showLine stateNum dfa
         = do
             let trans    = _δ dfa
-                σLst     = S.toAscList $ _σ dfa
+                σLst     = S.toAscList $ _Σ dfa
                 queries  = zip (repeat stateNum) σLst
                 mResults = mapM (flip M.lookup $ trans) queries
                 results  = fromMaybe [] mResults

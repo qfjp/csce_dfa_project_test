@@ -6,21 +6,21 @@ Error-reporting Dfa parse functions.
 -}
 module Parser.Dfa (doParseDfa, parseDfa) where
 
-import Control.Applicative ((<$>))
+import           Control.Applicative ((<$>))
 
-import Debug.Trace
+import           Debug.Trace
 
-import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified Data.Text as T
+import qualified Data.Map            as M
+import qualified Data.Set            as S
+import qualified Data.Text           as T
 
-import Data.Dfa (Dfa(..))
-import Data.Maybe
+import           Data.Dfa            (Dfa (..))
+import           Data.Maybe
 
-import Control.Monad
+import           Control.Monad
 
-import Text.Parsec
-import Text.Parsec.String
+import           Text.Parsec
+import           Text.Parsec.String
 
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
@@ -36,7 +36,7 @@ parseDfa
       σ     <- fmap S.fromList parseAlphabet
       _     <- newline
       δ     <- parseTransFunction numQs (S.toAscList σ)
-      return Dfa {_Q = numQs, _σ = σ, _δ = δ, _F = fs}
+      return Dfa {_Q = numQs, _Σ = σ, _δ = δ, _F = fs}
 
 parseTextThenColon :: Parser String
 parseTextThenColon
