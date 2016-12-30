@@ -1,7 +1,7 @@
 stack-all :
 	stack build
 
-stack-test : isDFA
+stack-test :
 	stack --no-terminal --install-ghc ${ARGS} test --bench --only-dependencies
 	echo "" | stack --no-terminal ${ARGS} test ":spec" --bench --no-run-benchmarks --haddock --no-haddock-deps --coverage
 
