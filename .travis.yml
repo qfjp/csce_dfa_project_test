@@ -157,10 +157,5 @@ script:
   set +ex
 
 after_script:
-- |
-  set -ex
-  if [ "x$GHCVER" = "7.8.4" ] || [ "x$GHCVER" = "x7.10.3" ] || [ "x$GHCVER" = "x8.0.1"]; then
-    travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-$GHCVER.tar.bz2 | tar -xj
-    ./shc csce-dfa-project-test spec
-  fi
-  set +ex
+-- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-7.10.3.tar.bz2 | tar -xj
+-- ./shc csce-dfa-project-test spec
