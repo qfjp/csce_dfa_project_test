@@ -14,12 +14,12 @@ import           Parser.Dfa              (parseDfa)
 import           System.Directory        (removeFile)
 import           System.IO               (hClose, openTempFile)
 
-import           Text.Parsec
+import           Text.Parsec             (ParseError, runParser)
 import           Text.Parsec.String      (parseFromFile)
 import           Text.RawString.QQ
 
-import           Test.Hspec
-import           Test.QuickCheck
+import           Test.Hspec              (SpecWith, describe, it, shouldBe)
+import           Test.QuickCheck         (Property, property)
 import           Test.QuickCheck.Monadic (assert, monadicIO, run)
 
 propShowThenRead :: Dfa -> Bool
