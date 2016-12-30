@@ -22,14 +22,13 @@ import           Test.Hspec
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic (assert, monadicIO, run)
 
-testDfa :: Dfa
-testDfa
-  = Dfa
-      { _Q = 1
-      , _σ = S.fromList " $&')+./0345678:;<=>ABCDFGIJMOPQSTXZ\\]_abcdknopqsuz{"
-      , _δ = M.fromList [((0,' '),0),((0,'$'),0),((0,'&'),0),((0,'\''),0),((0,')'),0),((0,'+'),0),((0,'.'),0),((0,'/'),0),((0,'0'),0),((0,'3'),0),((0,'4'),0),((0,'5'),0),((0,'6'),0),((0,'7'),0),((0,'8'),0),((0,':'),0),((0,';'),0),((0,'<'),0),((0,'='),0),((0,'>'),0),((0,'A'),0),((0,'B'),0),((0,'C'),0),((0,'D'),0),((0,'F'),0),((0,'G'),0),((0,'I'),0),((0,'J'),0),((0,'O'),0),((0,'P'),0),((0,'Q'),0),((0,'S'),0),((0,'T'),0),((0,'X'),0),((0,'Z'),0),((0,'\\'),0),((0,']'),0),((0,'_'),0),((0,'a'),0),((0,'b'),0),((0,'c'),0),((0,'d'),0),((0,'k'),0),((0,'n'),0),((0,'o'),0),((0,'p'),0),((0,'q'),0),((0,'s'),0),((0,'u'),0),((0,'z'),0),((0,'{'),0)]
-      , _F = S.fromList [0]
-      }
+propShowThenRead :: Dfa -> Bool
+propShowThenRead dfa
+  = let dfaText = showDfa dfa
+        maybeDfa = doParseDfa dfaText
+    in case maybeDfa of
+      Left x          -> error (show x)
+      Right parsedDfa -> dfa == parsedDfa
 
 propWriteThenRead :: Dfa -> Property
 propWriteThenRead dfa
@@ -137,9 +136,11 @@ Alphabet: 01
 dfaSpec :: SpecWith ()
 dfaSpec
   = do
-      describe "Writing and Reading" $
-          it "Dfa === parsing . printing" $
+      describe "Writing and Reading" $ do
+          it "Dfa === parsing . printing $ Dfa" $
               property $ propWriteThenRead
+          it "Dfa === parsing . showing $ Dfa" $
+              property $ propShowThenRead
       describe "DFA Parser" $ do
           it "Even # of 1's" $
               doParseDfa dfa1 `shouldBe` Right dfa1'
