@@ -1,30 +1,10 @@
-REMOVE=rm
+all : cabal-all stack-all
 
-MAKE=make
-
-CC=gcc
-
-LINK=gcc
-OBJOPTS=-c
-
-
-FENDIR=c_files
-SRC=$(wildcard $(FENDIR)/*c)
-OBJ=$(SRC:%.c=%.o)
-INC=$(wildcard $(FENDIR)/*h)
-
-ISDFA=$(FENDIR)/isDFA
-
-export
-
-all : isDFA cabal-all stack-all
-
-clean : c-clean cabal-clean stack-clean
+clean : cabal-clean stack-clean
 
 test : cabal-test stack-test
 
 .PHONY : all clean test
 
-include fenc.mk
 include stack.mk
 include cabal.mk

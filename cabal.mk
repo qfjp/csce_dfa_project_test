@@ -16,7 +16,7 @@ cabal-test : cabal-init cabal-test-init cabal-all
 cabal-clean :
 	cabal clean
 
-cabal-init : isDFA
+cabal-init :
 	$(SANDBOX)
 	cabal install $(CABALJOBS) --only-dependencies --enable-tests --enable-benchmarks --force-reinstalls --reorder-goals --max-backjumps=-1
 	cabal configure
