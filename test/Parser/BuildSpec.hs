@@ -1,11 +1,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Parser.BuildSpec where
 
-import Text.RawString.QQ
-import Text.Parsec
-import Parser.Build
+import           Parser.Build
+import           Text.Parsec
+import           Text.RawString.QQ
 
-import Test.Hspec
+import           Test.Hspec
 
 simpleOneBuild :: String
 simpleOneBuild

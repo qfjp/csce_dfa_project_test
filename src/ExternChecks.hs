@@ -1,24 +1,19 @@
 module ExternChecks where
 
-import Control.Monad (unless)
+import           Control.Monad    (unless)
 
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text        as T
+import qualified Data.Text.IO     as T
 
-import Parser.Dfa (doParseDfa)
+import           Parser.Dfa       (doParseDfa)
 
-import System.Directory
-  ( executable
-  , getCurrentDirectory
-  , getPermissions
-  , readable
-  , removeFile
-  )
-import System.Exit (ExitCode(ExitFailure), exitWith)
-import System.FilePath (takeFileName)
-import System.IO (hClose, openTempFile)
-import System.Info (os)
-import System.Process (readProcess, readProcessWithExitCode)
+import           System.Directory (executable, getCurrentDirectory,
+                                   getPermissions, readable, removeFile)
+import           System.Exit      (ExitCode (ExitFailure), exitWith)
+import           System.FilePath  (takeFileName)
+import           System.Info      (os)
+import           System.IO        (hClose, openTempFile)
+import           System.Process   (readProcess, readProcessWithExitCode)
 
 binExtension :: String
 binExtension = if os == "mingw32"
@@ -33,7 +28,7 @@ exitPermissions path
 
 isRight :: Either a b -> Bool
 isRight (Right _) = True
-isRight _ = False
+isRight _         = False
 
 checkDfa :: T.Text -> Bool
 checkDfa dfaText

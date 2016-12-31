@@ -17,10 +17,11 @@ module ProgramExecution (
     , resultToText
     ) where
 
-import Control.Applicative (Applicative, (<$>), (<*>), pure)
-import Data.Monoid (Monoid (..), Sum(..), (<>))
-import Test.QuickCheck hiding (Result(..))
-import Test.QuickCheck.Checkers
+import           Control.Applicative      (Applicative, pure, (<$>),
+                                           (<*>))
+import           Data.Monoid              (Monoid (..), Sum (..), (<>))
+import           Test.QuickCheck          hiding (Result (..))
+import           Test.QuickCheck.Checkers
 
 -- | Type for different portions of the project
 data RunType
@@ -69,12 +70,12 @@ rtToFile Continued  = "UNDEFINED"
 -- | A ProgramExecution is a test run over one task of the project.
 data ProgramExecution a b
     = PE { -- | The task which is being tested
-            _tag :: RunType
+            _tag       :: RunType
            -- | A monoid that keeps track of errors. Most likely
            -- Data.Monoid.Sum Int
          , _errorCount :: a
            -- | The result of the execution. Most likely 'Result'
-         , _result :: b }
+         , _result     :: b }
     deriving (Eq, Show)
 
 instance Functor (ProgramExecution a) where

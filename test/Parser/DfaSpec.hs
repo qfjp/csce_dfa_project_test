@@ -18,7 +18,8 @@ import           Text.Parsec             (ParseError, runParser)
 import           Text.Parsec.String      (parseFromFile)
 import           Text.RawString.QQ
 
-import           Test.Hspec              (SpecWith, describe, it, shouldBe)
+import           Test.Hspec              (SpecWith, describe, it,
+                                          shouldBe)
 import           Test.QuickCheck         (Property, property)
 import           Test.QuickCheck.Monadic (assert, monadicIO, run)
 

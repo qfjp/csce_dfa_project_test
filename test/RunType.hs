@@ -1,10 +1,10 @@
 module RunType where
 
-import ProgramExecution (RunType(..))
+import           ProgramExecution        (RunType (..))
 
-import Test.Hspec
-import Test.Hspec.Checkers
-import Test.QuickCheck.Classes
+import           Test.Hspec
+import           Test.Hspec.Checkers
+import           Test.QuickCheck.Classes
 
 rtSpec :: SpecWith ()
 rtSpec

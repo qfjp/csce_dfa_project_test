@@ -1,14 +1,14 @@
 module Main where
 
-import Control.Applicative ((<$>))
-import Control.Monad
-import System.Directory
-import System.IO
+import           Control.Applicative ((<$>))
+import           Control.Monad
+import           System.Directory
+import           System.IO
 
-import Arguments
-import ExternChecks (exitPermissions)
-import ProgramExecution
-import ProjectTest
+import           Arguments
+import           ExternChecks        (exitPermissions)
+import           ProgramExecution
+import           ProjectTest
 
 main :: IO ()
 main = do

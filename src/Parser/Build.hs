@@ -7,14 +7,14 @@ parsing and the output of user functions is done here.
 -}
 module Parser.Build (parseBuildFile) where
 
-import Control.Applicative ((<$>))
-import Control.Monad (when)
-import Data.Either (rights)
+import           Control.Applicative ((<$>))
+import           Control.Monad       (when)
+import           Data.Either         (rights)
 
-import qualified Data.Text as T
+import qualified Data.Text           as T
 
-import Text.Parsec
-import Text.Parsec.String
+import           Text.Parsec
+import           Text.Parsec.String
 
 -- | Content to be ignored while parsing
 parseIgnore :: Parser String
@@ -63,7 +63,7 @@ parseCommentOrLine
       comment <- optionMaybe (try parseComment)
       case comment of
         Nothing -> Right <$> manyTill anyChar parseEndOfLine
-        Just x -> Left <$> return x
+        Just x  -> Left <$> return x
 
 -- | eof Parser that returns a string to be used with other
 -- combinators

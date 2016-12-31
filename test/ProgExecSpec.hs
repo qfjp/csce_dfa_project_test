@@ -1,14 +1,14 @@
 module ProgExecSpec where
 
-import ProgramExecution (ProgramExecution(..))
+import           ProgramExecution        (ProgramExecution (..))
 
-import Control.Applicative ((<*>))
-import Control.Monad (ap)
+import           Control.Applicative     ((<*>))
+import           Control.Monad           (ap)
 
-import Test.Hspec
-import Test.Hspec.Checkers
-import Test.QuickCheck
-import Test.QuickCheck.Classes
+import           Test.Hspec
+import           Test.Hspec.Checkers
+import           Test.QuickCheck
+import           Test.QuickCheck.Classes
 
 peSpec :: SpecWith ()
 peSpec

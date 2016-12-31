@@ -16,29 +16,28 @@ module ProjectTest where
  -  $ ProjectTest.hs -t [your-submission-root-directory] -d [location of bin and test-suite]
  -}
 
-import ExternChecks
-import Parser.Build
-import ProgramExecution
+import           ExternChecks
+import           Parser.Build
+import           ProgramExecution
 
-import Text.Parsec.String (parseFromFile)
+import           Text.Parsec.String  (parseFromFile)
 
---import Data.Default
-import Control.Applicative (Applicative (..), (<$>))
-import Data.Foldable (foldlM)
-import Data.Maybe
-import Data.Monoid (Monoid (..), Sum(Sum), (<>))
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import           Control.Applicative (Applicative (..), (<$>))
+import           Control.Concurrent
+import           Control.Monad
 
-import Control.Concurrent
-import Control.Monad
+import           Data.Foldable       (foldlM)
+import           Data.Maybe
+import           Data.Monoid         (Monoid (..), Sum (Sum), (<>))
+import qualified Data.Text           as T
+import qualified Data.Text.IO        as T
 
-import System.Directory
-import System.Environment (getEnv)
-import System.Exit
-import System.IO
-import System.Process
-import System.FilePath
+import           System.Directory
+import           System.Environment  (getEnv)
+import           System.Exit
+import           System.FilePath
+import           System.IO
+import           System.Process
 
 
 
@@ -170,7 +169,7 @@ runProc h maybCwd testFiles (process:args)
       result <- timeProc action
       case result of
         Nothing -> hPutStrLn h "    TIMED OUT" >> return Nothing
-        Just x -> return . Just $ (fullProcStr, x)
+        Just x  -> return . Just $ (fullProcStr, x)
 
 failExecution :: Handle -> [(String, (ExitCode, String, String))] -> Int
               -> RunType -> IO (ProgramExecution (Sum Int) Int)
@@ -277,13 +276,13 @@ compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
                -> IO [Bool]
 compareAnswers outputs ansFilePaths binPath typ
   = case typ of
-      Continued -> return [False]
-      Simulate -> compareStringAnswers outputs ansFilePaths
-      Minimize -> compareAs Isomorphism outputs ansFilePaths binPath
-      Searcher -> compareAs Isomorphism outputs ansFilePaths binPath
+      Continued  -> return [False]
+      Simulate   -> compareStringAnswers outputs ansFilePaths
+      Minimize   -> compareAs Isomorphism outputs ansFilePaths binPath
+      Searcher   -> compareAs Isomorphism outputs ansFilePaths binPath
       BoolopComp -> compareAs Equivalence outputs ansFilePaths binPath
       BoolopProd -> compareAs Equivalence outputs ansFilePaths binPath
-      Invhom -> compareAs Equivalence outputs ansFilePaths binPath
+      Invhom     -> compareAs Equivalence outputs ansFilePaths binPath
       Properties -> compareStringAnswers outputs ansFilePaths
 
 compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> FilePath

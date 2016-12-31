@@ -1,11 +1,11 @@
 module Main where
 
-import Test.Hspec
+import           Test.Hspec
 
-import RunType
-import Parser.BuildSpec
-import Parser.DfaSpec
-import ProgExecSpec
+import           Parser.BuildSpec
+import           Parser.DfaSpec
+import           ProgExecSpec
+import           RunType
 
 main :: IO ()
 main
