@@ -13,7 +13,7 @@ import           System.Exit      (ExitCode (ExitFailure), exitWith)
 import           System.FilePath  (takeFileName)
 import           System.Info      (os)
 import           System.IO        (hClose, openTempFile)
-import           System.Process   (readProcess, readProcessWithExitCode)
+import           System.Process   (readProcess)
 
 binExtension :: String
 binExtension = if os == "mingw32"
@@ -35,8 +35,8 @@ checkDfa dfaText
   = isRight $ doParseDfa dfaText
 
 -- TODO: A lot
-checkIsomorphism :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
-checkIsomorphism dfaText dfaFile binPath isoChecker
+checkIsomorphism :: T.Text -> FilePath -> FilePath -> IO Bool
+checkIsomorphism dfaText dfaFile isoChecker
   = if not $ checkDfa dfaText
     then do
       isoCheckPerms <- getPermissions isoChecker
@@ -48,8 +48,8 @@ checkIsomorphism dfaText dfaFile binPath isoChecker
       return $ firstLine == "The two DFAs are isomorphic."
     else return False
 
-checkEquivalence :: T.Text -> FilePath -> FilePath -> FilePath -> IO Bool
-checkEquivalence dfaText dfaFile binPath isoChecker
+checkEquivalence :: T.Text -> FilePath -> FilePath -> IO Bool
+checkEquivalence dfaText dfaFile isoChecker
   = if not $ checkDfa dfaText
     then do
       isoCheckPerms <- getPermissions isoChecker
@@ -60,9 +60,6 @@ checkEquivalence dfaText dfaFile binPath isoChecker
       (tempFname,  tempHandle) <- openTempFile tempFilePath (dfaFileName ++ ".tmp")
       T.hPutStrLn tempHandle dfaText
       hClose tempHandle
-      isoCheckPerms <- getPermissions isoChecker
-      unless (readable isoCheckPerms && executable isoCheckPerms) $
-          exitPermissions isoChecker
       isomorphism <- readProcess isoChecker [dfaFile, tempFname] ""
       let firstLine =  head . lines $ isomorphism
       removeFile tempFname

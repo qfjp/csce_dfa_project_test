@@ -8,8 +8,6 @@ module Parser.Dfa (doParseDfa, parseDfa) where
 
 import           Control.Applicative ((<$>))
 
-import           Debug.Trace
-
 import qualified Data.Map            as M
 import qualified Data.Set            as S
 import qualified Data.Text           as T

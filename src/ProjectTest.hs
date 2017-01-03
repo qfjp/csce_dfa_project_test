@@ -22,20 +22,17 @@ import           ProgramExecution
 
 import           Text.Parsec.String  (parseFromFile)
 
-import           Control.Applicative (Applicative (..), (<$>))
+import           Control.Applicative ((<$>))
 import           Control.Concurrent
 import           Control.Monad
 
-import           Data.Foldable       (foldlM)
 import           Data.Maybe
-import           Data.Monoid         (Monoid (..), Sum (Sum), (<>))
+import           Data.Monoid         (Monoid (..), Sum (Sum))
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 
 import           System.Directory
-import           System.Environment  (getEnv)
 import           System.Exit
-import           System.FilePath
 import           System.IO
 import           System.Process
 
@@ -291,7 +288,7 @@ compareAs tag outputs ansFilePaths binPath
   = do
       let outsAndAns = zip outputs ansFilePaths
           isoCheckPath = binPath ++ "/" ++ execChecker
-      mapM (\(o, a) -> checkFunc o a binPath isoCheckPath) outsAndAns
+      mapM (\(o, a) -> checkFunc o a isoCheckPath) outsAndAns
   where
       (execChecker, checkFunc)
         = case tag of
