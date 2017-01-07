@@ -66,10 +66,6 @@ parseAlphChar :: Parser Char
 parseAlphChar
   = oneOf $ map (toEnum :: Int -> Char) [32..126]
 
-parseLines :: Parser [String]
-parseLines
-  = parseList (many parseAlphChar) (Just $ string "\n")
-
 parseIntListList :: Parser [[Int]]
 parseIntListList
   = parseList parseIntList (Just $ string "\n")

@@ -16,7 +16,7 @@ import           Data.Maybe          (fromMaybe)
 import           Data.Monoid         ((<>))
 import qualified Data.Set            as S
 import           Data.Text           (Text, pack)
-import           Data.Text.IO        (hPutStr, hPutStrLn)
+import           Data.Text.IO        (hPutStr)
 import           Data.Traversable    (sequenceA)
 
 import           System.IO           (Handle, stdout)

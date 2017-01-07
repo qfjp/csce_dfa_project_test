@@ -27,7 +27,7 @@ import           Control.Concurrent
 import           Control.Monad
 
 import           Data.Maybe
-import           Data.Monoid         (Monoid (..), Sum (Sum))
+import           Data.Monoid         (Sum (Sum))
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 
