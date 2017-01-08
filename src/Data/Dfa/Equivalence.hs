@@ -10,13 +10,14 @@ https://arxiv.org/pdf/0907.5058.pdf
 module Data.Dfa.Equivalence (hopcroftKarp) where
 
 import           Data.Dfa
+import           Data.Foldable          (forM_)
 import qualified Data.Map               as M
 import           Data.Maybe             (fromJust, fromMaybe)
 import qualified Data.Set               as S
 
-import           Control.Monad          (forM_, unless, when)
-import           Control.Monad.Identity
-import           Control.Monad.State
+import           Control.Monad          (unless, when)
+import           Control.Monad.Identity hiding (forM_)
+import           Control.Monad.State    hiding (forM_)
 
 data TagState
     = TagState Char Int
@@ -48,7 +49,7 @@ find element
       if S.size containingSets > 1
       then error "BUG: Error in find --- too many sets"
       else
-          return $ S.elemAt 0 containingSets
+          return $ setHead containingSets
 
 
 hopcroftKarp :: Dfa -> Dfa -> Bool
