@@ -108,8 +108,6 @@ hopcroftKarp dfaA dfaB
                 aNonFinal = allNonFinal dfaA aStates
                 bFinal = allFinal dfaB bStates
                 bNonFinal = allNonFinal dfaB bStates
-                resultFinal = aFinal && bFinal
-                resultFinal' = aNonFinal && bNonFinal
             in (aFinal && bFinal) || (aNonFinal && bNonFinal)
 
 allFinal :: Dfa -> S.Set Int -> Bool
@@ -125,7 +123,3 @@ allNonFinal dfa states
 setHead :: S.Set a -> a
 setHead
   = head . S.toAscList
-
-setTail :: S.Set a -> S.Set a
-setTail
-  = S.fromDistinctAscList . tail . S.toAscList
