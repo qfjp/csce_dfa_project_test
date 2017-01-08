@@ -7,23 +7,71 @@ The algorithms here are derived from various algorithms presented by
 Hopcroft. Outside of his textbook, a few were taken from this paper:
 https://arxiv.org/pdf/0907.5058.pdf
 -}
-module Data.Dfa.Equivalence (hopcroftKarp) where
+module Data.Dfa.Equivalence
+    ( checkDfa
+    , equivalent
+    , equivalentText
+    , isomorphic
+    , isomorphicText
+    ) where
 
 import           Data.Dfa
 import           Data.Foldable          (forM_)
 import qualified Data.Map               as M
 import           Data.Maybe             (fromJust, fromMaybe)
 import qualified Data.Set               as S
+import qualified Data.Text              as T
 
 import           Control.Monad          (unless, when)
 import           Control.Monad.Identity hiding (forM_)
 import           Control.Monad.State    hiding (forM_)
+
+import           Parser.Dfa             (doParseDfa)
 
 data TagState
     = TagState Char Int
     deriving (Eq, Ord, Show)
 
 type SetOfSets a = S.Set (S.Set a)
+
+
+isRight :: Either a b -> Bool
+isRight (Right _) = True
+isRight _         = False
+
+isLeft :: Either a b -> Bool
+isLeft (Left _) = True
+isLeft _        = False
+
+checkDfa :: T.Text -> Bool
+checkDfa dfaText
+  = isRight $ doParseDfa dfaText
+
+compareText :: (Dfa -> Dfa -> Bool) -> T.Text -> T.Text -> Bool
+compareText f dfaT1 dfaT2
+  = let dfaE1 = doParseDfa dfaT1
+        dfaE2 = doParseDfa dfaT2
+    in if isLeft dfaE1 || isLeft dfaE2
+       then False
+       else let (Right dfa1) = dfaE1
+                (Right dfa2) = dfaE2
+            in f dfa1 dfa2
+
+equivalentText :: T.Text -> T.Text -> Bool
+equivalentText
+  = compareText equivalent
+
+isomorphicText :: T.Text -> T.Text -> Bool
+isomorphicText
+  = compareText isomorphic
+
+equivalent :: Dfa -> Dfa -> Bool
+equivalent
+  = hopcroftKarp
+
+isomorphic :: Dfa -> Dfa -> Bool
+isomorphic dfa1 dfa2
+  = _Q dfa1 == _Q dfa2 && equivalent dfa1 dfa2
 
 -- | Destructive union within a set of sets
 union :: (Show a, Ord a) => S.Set a -> S.Set a -> State (SetOfSets a) Bool

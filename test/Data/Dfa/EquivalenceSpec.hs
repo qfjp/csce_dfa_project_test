@@ -3,7 +3,7 @@
 module Data.Dfa.EquivalenceSpec where
 
 import           Data.Dfa
-import           Data.Dfa.Equivalence
+import           Data.Dfa.Equivalence (equivalent)
 import qualified Data.Map             as M
 import qualified Data.Set             as S
 import qualified Data.Text            as T
@@ -122,36 +122,36 @@ equivalenceSpec :: SpecWith ()
 equivalenceSpec
   = describe "Equivalence using Hopcroft-Karp" $ do
       it "Odd zeros (2 states) === Odd zeros (4 states)" $
-          hopcroftKarp oddZeros1 oddZeros2 `shouldBe` True
+          equivalent oddZeros1 oddZeros2 `shouldBe` True
       it "minDfa1 === nonminDfa1" $
           let (Right minDfa) = doParseDfa minDfa1
               (Right nonMin) = doParseDfa nonminimalDfa1
-          in hopcroftKarp minDfa nonMin `shouldBe` True
+          in equivalent minDfa nonMin `shouldBe` True
       it "minDfa2 === nonminDfa2" $
           let (Right minDfa) = doParseDfa minDfa2
               (Right nonMin) = doParseDfa nonminimalDfa2
-          in hopcroftKarp minDfa nonMin `shouldBe` True
+          in equivalent minDfa nonMin `shouldBe` True
       it "minDfa3 === nonminDfa3" $
           let (Right minDfa) = doParseDfa minDfa3
               (Right nonMin) = doParseDfa nonminimalDfa3
-          in hopcroftKarp minDfa nonMin `shouldBe` True
+          in equivalent minDfa nonMin `shouldBe` True
       it "minDfa1 != minDfa2" $
           let (Right dfa1) = doParseDfa minDfa1
               (Right dfa2) = doParseDfa minDfa2
-          in hopcroftKarp dfa1 dfa2 `shouldBe` False
+          in equivalent dfa1 dfa2 `shouldBe` False
       it "minDfa1 != minDfa3" $
           let (Right dfa1) = doParseDfa minDfa1
               (Right dfa2) = doParseDfa minDfa3
-          in hopcroftKarp dfa1 dfa2 `shouldBe` False
+          in equivalent dfa1 dfa2 `shouldBe` False
       it "minDfa1 != nonminDfa2" $
           let (Right dfa1) = doParseDfa minDfa1
               (Right dfa2) = doParseDfa nonminimalDfa2
-          in hopcroftKarp dfa1 dfa2 `shouldBe` False
+          in equivalent dfa1 dfa2 `shouldBe` False
       it "minDfa2 != nonminDfa1" $
           let (Right dfa1) = doParseDfa minDfa2
               (Right dfa2) = doParseDfa nonminimalDfa1
-          in hopcroftKarp dfa1 dfa2 `shouldBe` False
+          in equivalent dfa1 dfa2 `shouldBe` False
       it "minDfa3 != nonminDfa2" $
           let (Right dfa1) = doParseDfa minDfa3
               (Right dfa2) = doParseDfa nonminimalDfa2
-          in hopcroftKarp dfa1 dfa2 `shouldBe` False
+          in equivalent dfa1 dfa2 `shouldBe` False

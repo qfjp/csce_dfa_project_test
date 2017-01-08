@@ -7,7 +7,7 @@ import qualified Data.Map                as M
 import qualified Data.Set                as S
 import qualified Data.Text               as T
 
-import           ExternChecks            (checkDfa)
+import           Data.Dfa.Equivalence    (checkDfa)
 
 import           Parser.Dfa              (parseDfa)
 

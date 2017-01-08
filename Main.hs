@@ -20,12 +20,9 @@ main = do
     unless (_optionsSet opts) $ void printHelp
 
     testSuiteRoot <- (++ "/test-suite") <$> _testdir opts
-    binDir        <- (++ "/bin") <$> _testdir opts
-    binPerms      <- getPermissions binDir
     testPerms     <- getPermissions testSuiteRoot
     commentsExist <- doesFileExist commentsFile
 
-    unless (readable binPerms)  $ exitPermissions binDir
     unless (readable testPerms) $ exitPermissions testSuiteRoot
 
     when commentsExist $ do
@@ -33,7 +30,7 @@ main = do
             commentsFile ++ " exists -- making backup comments.bak"
         renameFile commentsFile commentsFileBackup
     withFile commentsFile WriteMode $ \h -> do
-      results <- mapM (execute h (testSuiteRoot, binDir, progDir))
+      results <- mapM (execute h (testSuiteRoot, progDir))
                       [ Simulate, Minimize, Searcher
                       , BoolopComp, BoolopProd, Invhom, Properties
                       ]

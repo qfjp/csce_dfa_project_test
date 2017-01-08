@@ -16,20 +16,23 @@ module ProjectTest where
  -  $ ProjectTest.hs -t [your-submission-root-directory] -d [location of bin and test-suite]
  -}
 
-import           ExternChecks
 import           Parser.Build
 import           ProgramExecution
 
-import           Text.Parsec.String  (parseFromFile)
+import           Text.Parsec.String   (parseFromFile)
 
-import           Control.Applicative ((<$>))
+import           Control.Applicative  ((<$>))
 import           Control.Concurrent
 import           Control.Monad
 
+import           Data.Dfa
+import           Data.Dfa.Equivalence (equivalentText, isomorphicText)
 import           Data.Maybe
-import           Data.Monoid         (Sum (Sum))
-import qualified Data.Text           as T
-import qualified Data.Text.IO        as T
+import           Data.Monoid          (Sum (Sum))
+import qualified Data.Text            as T
+import qualified Data.Text.IO         as T
+
+import           Parser.Dfa           (doParseDfa)
 
 import           System.Directory
 import           System.Exit
@@ -185,9 +188,9 @@ failExecution h failures failCode typ
                     , _result = failCode}
 
 -- TODO break into blocks
-execute :: Handle -> (FilePath, FilePath, FilePath) -> RunType
+execute :: Handle -> (FilePath, FilePath) -> RunType
         -> IO (ProgramExecution (Sum Int) Int)
-execute h (tests, bins, this) typ
+execute h (tests, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
           testDir = tests ++ "/" ++ rtToFile typ ++ "/"
@@ -201,6 +204,7 @@ execute h (tests, bins, this) typ
         parsedFile <- parseFromFile parseBuildFile buildFile
         case parsedFile of
           Right (builds, run) -> do
+            putStrLn $ "Building" ++ " " ++ show typ ++ "..."
             hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
             buildResults' <- sequence <$>
                 mapM (runProc h (Just this) [] . words) builds
@@ -214,6 +218,7 @@ execute h (tests, bins, this) typ
             if not (null buildFailures)
             then failExecution h buildFailures 2 typ
             else do
+                putStrLn $ "Running " ++ show typ ++ "..."
                 hPutStrLn h $ "Running " ++ show typ ++ "..."
                 let userCmd = words run
                     testFilesNoPath = map fst . testCases $ typ
@@ -244,7 +249,7 @@ execute h (tests, bins, this) typ
                               answerFsInDir = map (testDir ++) answerFiles
                           comparisons <- compareAnswers outputs
                                                         answerFsInDir
-                                                        bins typ
+                                                        typ
                           let numWrong = length . filter not $ comparisons
                               wrongAnswers
                                 = map (fst . snd) . filter (not . fst) $
@@ -269,31 +274,30 @@ execute h (tests, bins, this) typ
                       , _errorCount = Sum 0
                       , _result = 1}
 
-compareAnswers :: [T.Text] -> [FilePath] -> FilePath -> RunType
+compareAnswers :: [T.Text] -> [FilePath] -> RunType
                -> IO [Bool]
-compareAnswers outputs ansFilePaths binPath typ
+compareAnswers outputs ansFilePaths typ
   = case typ of
       Continued  -> return [False]
       Simulate   -> compareStringAnswers outputs ansFilePaths
-      Minimize   -> compareAs Isomorphism outputs ansFilePaths binPath
-      Searcher   -> compareAs Isomorphism outputs ansFilePaths binPath
-      BoolopComp -> compareAs Equivalence outputs ansFilePaths binPath
-      BoolopProd -> compareAs Equivalence outputs ansFilePaths binPath
-      Invhom     -> compareAs Equivalence outputs ansFilePaths binPath
+      Minimize   -> compareAs Isomorphism outputs ansFilePaths
+      Searcher   -> compareAs Isomorphism outputs ansFilePaths
+      BoolopComp -> compareAs Equivalence outputs ansFilePaths
+      BoolopProd -> compareAs Equivalence outputs ansFilePaths
+      Invhom     -> compareAs Equivalence outputs ansFilePaths
       Properties -> compareStringAnswers outputs ansFilePaths
 
-compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> FilePath
-          -> IO [Bool]
-compareAs tag outputs ansFilePaths binPath
+compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> IO [Bool]
+compareAs tag outputs ansFilePaths
   = do
-      let outsAndAns = zip outputs ansFilePaths
-          isoCheckPath = binPath ++ "/" ++ execChecker
-      mapM (\(o, a) -> checkFunc o a isoCheckPath) outsAndAns
+      answers <- traverse T.readFile ansFilePaths :: IO [T.Text]
+      let outsAndAns = zip outputs answers
+      return $ map (\(o, a) -> checkFunc o a) outsAndAns
   where
-      (execChecker, checkFunc)
+      checkFunc
         = case tag of
-            Isomorphism -> ("DFAiso", checkIsomorphism)
-            Equivalence -> ("DFAequiv", checkEquivalence)
+            Isomorphism -> isomorphicText
+            Equivalence -> equivalentText
 
 compareStringAnswers :: [T.Text] -> [FilePath] -> IO [Bool]
 compareStringAnswers outputs ansFilePaths
