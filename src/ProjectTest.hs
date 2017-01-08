@@ -290,7 +290,7 @@ compareAnswers outputs ansFilePaths typ
 compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> IO [Bool]
 compareAs tag outputs ansFilePaths
   = do
-      answers <- traverse T.readFile ansFilePaths :: IO [T.Text]
+      answers <- mapM T.readFile ansFilePaths :: IO [T.Text]
       let outsAndAns = zip outputs answers
       return $ map (\(o, a) -> checkFunc o a) outsAndAns
   where
