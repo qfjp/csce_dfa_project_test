@@ -1,6 +1,7 @@
-module ProgExecSpec where
+module ProgramExecutionSpec where
 
-import           ProgramExecution        (ProgramExecution (..))
+import           ProgramExecution        (ProgramExecution (..),
+                                          RunType (..))
 
 import           Control.Applicative     ((<*>))
 import           Control.Monad           (ap)
@@ -20,3 +21,8 @@ peSpec
         property $ \x y -> (x <*> y)
           == ((x :: ProgramExecution String (Int -> Int))
                `ap` (y :: ProgramExecution String Int))
+
+rtSpec :: SpecWith ()
+rtSpec
+  = describe "RunType ?Monoid?" $
+      testBatch $ monoid (undefined :: RunType)
