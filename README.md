@@ -1,5 +1,5 @@
 # CSCE 355 Project: Haskell Tester
-A Haskell program to test submissions for the CSCE 355 DFA Project
+A program to test submissions for the CSCE 355 DFA Project
 
 [![Build Status](https://travis-ci.org/qfjp/csce_dfa_project_test.svg?branch=master)](https://travis-ci.org/qfjp/csce_dfa_project_test/)
 [![Coverage Status](https://coveralls.io/repos/github/qfjp/csce_dfa_project_test/badge.svg?branch=master)](https://coveralls.io/github/qfjp/csce_dfa_project_test?branch=master)
@@ -18,12 +18,19 @@ following instead
     make cabal-test
     make cabal-all
 
-## Install on Windows (Work in Progress)
+## Install on Windows
 
-First, ensure you have [haskell
-stack](https://docs.haskellstack.org/en/stable/README/) and
-[MinGW](http://mingw.org/) installed to the default locations. At a
-command prompt, type the following:
+First, ensure you have [git](https://git-scm.com/download/), [haskell
+stack](https://docs.haskellstack.org/en/stable/README/), and
+[MinGW](http://mingw.org/) installed to the default locations.
+
+Open a command prompt by typing <kbd>Win</kbd> <kbd>R</kbd>, then type
+`cmd` in the dialog box that opens.
+
+At the prompt, enter the following commands:
+
+    git clone https://github.com/qfjp/csce_dfa_project_test
+    cd csce_dfa_project_test
 
     set PATH=%PATH%;C:\MinGW\bin
     mingw32-make.exe stack-all
