@@ -28,8 +28,24 @@ import           Control.Monad.State    hiding (forM_)
 import           Parser.Dfa             (doParseDfa)
 
 data TagState
-    = TagState Char Int
+    = DfaA Int
+    | DfaB Int
     deriving (Eq, Ord, Show)
+
+isDfaA :: TagState -> Bool
+isDfaA (DfaA _)
+  = True
+isDfaA _
+  = False
+
+isDfaB :: TagState -> Bool
+isDfaB = not . isDfaA
+
+untagState :: TagState -> Int
+untagState (DfaA x)
+  = x
+untagState (DfaB x)
+  = x
 
 type SetOfSets a = S.Set (S.Set a)
 
@@ -101,13 +117,13 @@ find element
 hopcroftKarp :: Dfa -> Dfa -> Bool
 hopcroftKarp dfaA dfaB
   = let σ =  _Σ dfaA
-        statesA = map (S.singleton . TagState 'A') [0.._Q dfaA - 1]
-        statesB = map (S.singleton . TagState 'B') [0.._Q dfaB - 1]
+        statesA = map (S.singleton . DfaA) [0.._Q dfaA - 1]
+        statesB = map (S.singleton . DfaB) [0.._Q dfaB - 1]
         states' = S.fromList statesA `S.union` S.fromList statesB
-        starts  = (TagState 'A' 0, TagState 'B' 0)
+        starts  = (DfaA 0, DfaB 0)
         states  = execState
-                    (S.singleton (TagState 'A' 0) `union`
-                     S.singleton (TagState 'B' 0))
+                    (S.singleton (DfaA 0) `union`
+                     S.singleton (DfaB 0))
                     states'
         partition = execState (evalStateT (forStack σ) [starts]) states
     in (_Σ dfaA == _Σ dfaB) && checkPartition partition
@@ -127,11 +143,13 @@ hopcroftKarp dfaA dfaB
                   -> StateT [(TagState, TagState)] (State (SetOfSets TagState)) ()
         forSymbol symb
           = do
-              ((TagState _ pNum, TagState _ qNum):stack) <- get
+              ((p, q):stack) <- get
+              let pNum = untagState p
+                  qNum = untagState q
               let pOnSymbNum = fromJust $ M.lookup (pNum, symb) (_δ dfaA)
                   qOnSymbNum = fromJust $ M.lookup (qNum, symb) (_δ dfaB)
-                  pOnSymb = TagState 'A' pOnSymbNum
-                  qOnSymb = TagState 'B' qOnSymbNum
+                  pOnSymb = DfaA pOnSymbNum
+                  qOnSymb = DfaB qOnSymbNum
               p' <- lift $ find pOnSymb
               q' <- lift $ find qOnSymb
               when (p' /= q') $ do
@@ -142,11 +160,16 @@ hopcroftKarp dfaA dfaB
         checkPartition
           = S.foldr (&&) True . S.map sameFinality
 
+        --sameFinality' :: TagState -> TagState -> Bool
+        --sameFinality' (TagState chr1 state1) (TagState chr2 state2)
+        --  |
+        --  where dfa1 == if chr1 == 'A' then
+
         sameFinality :: S.Set TagState -> Bool
         sameFinality states
-          = let aStates' = S.filter (\(TagState chr _) -> chr == 'A') states
-                bStates' = S.filter (\(TagState chr _) -> chr == 'B') states
-                unTag = S.map (\(TagState _ num) -> num)
+          = let aStates' = S.filter isDfaA states
+                bStates' = S.filter isDfaB states
+                unTag = S.map untagState
                 aStates = unTag aStates'
                 bStates = unTag bStates'
                 aFinal = allFinal dfaA aStates
