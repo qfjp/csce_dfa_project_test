@@ -50,11 +50,10 @@ compareText :: (Dfa -> Dfa -> Bool) -> T.Text -> T.Text -> Bool
 compareText f dfaT1 dfaT2
   = let dfaE1 = doParseDfa dfaT1
         dfaE2 = doParseDfa dfaT2
-    in if isLeft dfaE1 || isLeft dfaE2
-       then False
-       else let (Right dfa1) = dfaE1
-                (Right dfa2) = dfaE2
-            in f dfa1 dfa2
+    in (not (isLeft dfaE1 || isLeft dfaE2) &&
+          (let (Right dfa1) = dfaE1
+               (Right dfa2) = dfaE2
+           in f dfa1 dfa2))
 
 equivalentText :: T.Text -> T.Text -> Bool
 equivalentText
@@ -107,8 +106,8 @@ hopcroftKarp dfaA dfaB
         states' = S.fromList statesA `S.union` S.fromList statesB
         starts  = (TagState 'A' 0, TagState 'B' 0)
         states  = execState
-                    (union (S.singleton (TagState 'A' 0))
-                           (S.singleton (TagState 'B' 0)))
+                    (S.singleton (TagState 'A' 0) `union`
+                     S.singleton (TagState 'B' 0))
                     states'
         partition = execState (evalStateT (forStack σ) [starts]) states
     in (_Σ dfaA == _Σ dfaB) && checkPartition partition
@@ -128,7 +127,7 @@ hopcroftKarp dfaA dfaB
                   -> StateT [(TagState, TagState)] (State (SetOfSets TagState)) ()
         forSymbol symb
           = do
-              (((TagState _ pNum), (TagState _ qNum)):stack) <- get
+              ((TagState _ pNum, TagState _ qNum):stack) <- get
               let pOnSymbNum = fromJust $ M.lookup (pNum, symb) (_δ dfaA)
                   qOnSymbNum = fromJust $ M.lookup (qNum, symb) (_δ dfaB)
                   pOnSymb = TagState 'A' pOnSymbNum

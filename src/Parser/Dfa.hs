@@ -29,9 +29,9 @@ parseDfa :: Parser Dfa
 parseDfa
   = do
       numQs <- parseStateNum
-      fs    <- fmap S.fromList $ parseAcceptingStates numQs
+      fs    <- S.fromList <$> parseAcceptingStates numQs
       _     <- newline
-      σ     <- fmap S.fromList parseAlphabet
+      σ     <- S.fromList <$> parseAlphabet
       _     <- newline
       δ     <- parseTransFunction numQs (S.toAscList σ)
       return Dfa {_Q = numQs, _Σ = σ, _δ = δ, _F = fs}
@@ -70,7 +70,7 @@ parseIntListList :: Parser [[Int]]
 parseIntListList
   = parseList parseIntList (Just $ string "\n")
 
-parseAlphabetChars :: Parser [Char]
+parseAlphabetChars :: Parser String
 parseAlphabetChars
   = parseList parseAlphChar Nothing
 
@@ -89,13 +89,13 @@ parseAcceptingStates numQs
           fail "State out of range"
       return fs
 
-parseAlphabet :: Parser [Char]
+parseAlphabet :: Parser String
 parseAlphabet
   = do
       _ <- parseTextThenColon
       parseAlphabetChars
 
-parseTransFunction :: Int -> [Char] -> Parser (M.Map (Int, Char) Int)
+parseTransFunction :: Int -> String -> Parser (M.Map (Int, Char) Int)
 parseTransFunction numQs abet
   = do
       let states = [0..numQs - 1] :: [Int]
@@ -103,10 +103,10 @@ parseTransFunction numQs abet
             = [ (state, symb)
               | state <- states, symb <- abet] :: [(Int, Char)]
       rawTrans <- parseIntListList
-      when ((length rawTrans) < numQs) $
+      when (length rawTrans < numQs) $
           fail "Error in transition table"
       let rawTransLengths = map length rawTrans
-      when (null rawTrans || (any (/= head rawTransLengths) (tail rawTransLengths))) $
+      when (null rawTrans || any (/= head rawTransLengths) (tail rawTransLengths)) $
           fail "Error in transition table"
       let rawTransOneD = join rawTrans
       when (any (>= numQs) rawTransOneD) $

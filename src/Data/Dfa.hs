@@ -47,7 +47,7 @@ instance Arbitrary Dfa where
     arbitrary
       = do
           numQs <- arbitrary `suchThat` (> 0)
-          σ' <- sublistOf (map toEnum [32..126] :: [Char]) `suchThat` (not . null)
+          σ' <- sublistOf (map toEnum [32..126] :: String) `suchThat` (not . null)
           fs' <- sublistOf [0..numQs - 1] `suchThat` (not . null) -- TODO: allow for empty list
           let σ  = S.fromList σ'
               fs = S.fromList fs'
@@ -60,7 +60,7 @@ instance Arbitrary Dfa where
                 let σ' = S.toAscList σ
                     states = [0..numQs - 1] :: [Int]
                     keys :: [[(Int, Char)]]
-                    keys = map (\x -> zip x σ') (map repeat states)
+                    keys = map ((`zip` σ') . repeat) states
                     gensByRow = map (\x -> zip x (repeat $ elements states)) keys
                     gens :: [((Int, Char), Gen Int)]
                     gens = join gensByRow
@@ -101,7 +101,7 @@ showTransFunction dfa'
             let trans    = _δ dfa
                 σLst     = S.toAscList $ _Σ dfa
                 queries  = zip (repeat stateNum) σLst
-                mResults = mapM (flip M.lookup $ trans) queries
+                mResults = mapM (`M.lookup` trans) queries
                 results  = fromMaybe [] mResults
             showLst results <> "\n"
 

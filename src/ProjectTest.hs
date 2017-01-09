@@ -11,14 +11,11 @@ import           Control.Applicative  ((<$>))
 import           Control.Concurrent
 import           Control.Monad
 
-import           Data.Dfa
 import           Data.Dfa.Equivalence (equivalentText, isomorphicText)
 import           Data.Maybe
 import           Data.Monoid          (Sum (Sum))
 import qualified Data.Text            as T
 import qualified Data.Text.IO         as T
-
-import           Parser.Dfa           (doParseDfa)
 
 import           System.Directory
 import           System.Exit
@@ -163,11 +160,11 @@ failExecution h failures failCode typ
   = do
       let first = head failures
           errorMsg = (\(_, _, x) -> x) . snd $ first
-      hPutStrLn h $ "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
       hPutStrLn h $ "  ERROR: " ++ (show . fst) first ++ " "
                              ++ "failed with error:"
       hPutStrLn h $ unlines . map ("         " ++) . lines $ errorMsg
-      hPutStrLn h $ "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+      hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
       hPutStrLn h $ "  Abandoning " ++ show typ
       return PE { _tag = typ
                     , _errorCount = Sum $ length failures
@@ -278,7 +275,7 @@ compareAs tag outputs ansFilePaths
   = do
       answers <- mapM T.readFile ansFilePaths :: IO [T.Text]
       let outsAndAns = zip outputs answers
-      return $ map (\(o, a) -> checkFunc o a) outsAndAns
+      return $ map (uncurry checkFunc) outsAndAns
   where
       checkFunc
         = case tag of

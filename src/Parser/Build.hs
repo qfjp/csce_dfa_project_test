@@ -37,7 +37,7 @@ parseCommands intro end
   = do
       _ <- intro
       commands' <- manyTill parseCommentOrLine (try . lookAhead $ end)
-      let commands = filter (\x -> length x > 0) $ rights commands'
+      let commands = filter (not . null) $ rights commands'
           strip = T.unpack . T.strip . T.pack
           stripCommands = map strip commands
       return stripCommands
