@@ -21,6 +21,24 @@ doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
   = runParser parseDfa () "" . T.unpack
 
+simple :: Dfa
+simple
+  = Dfa
+      2
+      (S.fromList ['0', '1'])
+      (M.fromList [ ((0, '0'), 1), ((0, '1'), 0)
+                  , ((1, '0'), 0), ((1, '1'), 1)])
+      (S.fromList [])
+
+simpleText :: T.Text
+simpleText
+  = [r|
+Number of states: 1
+Accepting States:
+Alphabet: 0123456789abcdef
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+|]
+
 oddZeros1 :: Dfa
 oddZeros1
   = Dfa
@@ -128,6 +146,8 @@ dfaTextComparisonSpec
       it "Any Dfa (as text) is not isomorphic to unparseable data" $
           property $ (\dfa str -> let dfa' = showDfa dfa
                               in not $ isomorphicText dfa' (T.pack str))
+      it "No final states" $
+          isomorphicText simpleText simpleText `shouldBe` True
       it "minDfa2 === nonminDfa2" $
           equivalentText minDfa2 nonminimalDfa2 `shouldBe` True
       it "minDfa3 === nonminDfa3" $
@@ -144,6 +164,8 @@ isomorphismSpec
           property $ (\dfa -> isomorphic dfa dfa)
       it "Odd zeros (2 states) ~= Odd zeros (4 states)" $
           isomorphic oddZeros1 oddZeros2 `shouldBe` False
+      it "No final states" $
+          isomorphic simple simple `shouldBe` True
       it "minDfa1 ~= nonminDfa1" $
           let (Right minDfa) = doParseDfa minDfa1
               (Right nonMin) = doParseDfa nonminimalDfa1

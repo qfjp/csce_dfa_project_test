@@ -4,7 +4,7 @@ Description : Module to parse a Dfa
 
 Error-reporting Dfa parse functions.
 -}
-module Parser.Dfa (doParseDfa, parseDfa) where
+module Parser.Dfa (doParseDfa, parseDfa, parseAcceptingStates) where
 
 import           Control.Applicative ((<$>))
 
@@ -29,7 +29,7 @@ parseDfa :: Parser Dfa
 parseDfa
   = do
       numQs <- parseStateNum
-      fs    <- S.fromList <$> parseAcceptingStates numQs
+      fs    <- S.fromList <$> (parseAcceptingStates numQs)
       _     <- newline
       σ     <- S.fromList <$> parseAlphabet
       _     <- newline
@@ -40,7 +40,7 @@ parseTextThenColon :: Parser String
 parseTextThenColon
   = do
       text <- many (upper <|> lower <|> space)
-      _ <- oneOf ":" >> oneOf " "
+      _ <- try (string ": ") <|> string ":"
       return text
 
 parseInt :: Parser Int
@@ -84,7 +84,7 @@ parseAcceptingStates :: Int -> Parser [Int]
 parseAcceptingStates numQs
   = do
       _ <- parseTextThenColon
-      fs <- parseIntList
+      fs <- try parseIntList <|> return []
       when (any (>= numQs) fs) $
           fail "State out of range"
       return fs

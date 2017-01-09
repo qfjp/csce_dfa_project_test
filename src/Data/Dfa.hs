@@ -48,7 +48,7 @@ instance Arbitrary Dfa where
       = do
           numQs <- arbitrary `suchThat` (> 0)
           σ' <- sublistOf (map toEnum [32..126] :: String) `suchThat` (not . null)
-          fs' <- sublistOf [0..numQs - 1] `suchThat` (not . null) -- TODO: allow for empty list
+          fs' <- sublistOf [0..numQs - 1]
           let σ  = S.fromList σ'
               fs = S.fromList fs'
           δ <- genArbitraryTrans numQs σ

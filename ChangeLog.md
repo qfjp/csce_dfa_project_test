@@ -1,5 +1,12 @@
 # Revision history for csce-dfa-project-test
 
+## 0.2.0.1  -- 2017-01-08
+
+Bug Fixes:
+
+* Fixed bug which made parsing a DFA with no accepting states throw an
+  error
+
 ## 0.2.0.0  -- 2017-01-08
 
 Release notes:
