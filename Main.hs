@@ -1,14 +1,18 @@
 module Main where
 
 import           Control.Applicative ((<$>))
-import           Control.Monad
-import           System.Directory
-import           System.IO
+import           Control.Monad       (unless, void, when)
 
-import           Arguments
+import           System.Directory    (doesFileExist, getPermissions,
+                                      readable, renameFile)
+import           System.IO           (IOMode (WriteMode), hPutStrLn,
+                                      withFile)
+
+import           Arguments           (Options (..), parseArgs,
+                                      printHelp)
 import           ExternChecks        (exitPermissions)
-import           ProgramExecution
-import           ProjectTest
+import           ProgramExecution    (RunType (..), showProgExec)
+import           ProjectTest         (execute)
 
 main :: IO ()
 main = do
