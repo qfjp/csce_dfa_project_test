@@ -16,3 +16,4 @@ main
       dfaSpec
       equivalenceSpec
       isomorphismSpec
+      dfaTextComparisonSpec

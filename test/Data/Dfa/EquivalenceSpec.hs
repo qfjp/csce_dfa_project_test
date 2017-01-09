@@ -3,7 +3,8 @@
 module Data.Dfa.EquivalenceSpec where
 
 import           Data.Dfa
-import           Data.Dfa.Equivalence (equivalent, isomorphic)
+import           Data.Dfa.Equivalence (equivalent, equivalentText,
+                                       isomorphic, isomorphicText)
 import qualified Data.Map             as M
 import qualified Data.Set             as S
 import qualified Data.Text            as T
@@ -117,6 +118,24 @@ Alphabet: 01
 5 6
 6 3
 |]
+
+dfaTextComparisonSpec :: SpecWith ()
+dfaTextComparisonSpec
+  = describe "Comparisons on textual representations of Dfas" $ do
+      it "Any Dfa (as text) is self-isomorphic" $
+          property $ (\dfa -> let dfa' = showDfa dfa
+                              in isomorphicText dfa' dfa')
+      it "Any Dfa (as text) is not isomorphic to unparseable data" $
+          property $ (\dfa str -> let dfa' = showDfa dfa
+                              in not $ isomorphicText dfa' (T.pack str))
+      it "minDfa2 === nonminDfa2" $
+          equivalentText minDfa2 nonminimalDfa2 `shouldBe` True
+      it "minDfa3 === nonminDfa3" $
+          equivalentText minDfa3 nonminimalDfa3 `shouldBe` True
+      it "minDfa1 != minDfa2" $
+          equivalentText minDfa1 minDfa2 `shouldBe` False
+      it "minDfa1 != minDfa3" $
+          equivalentText minDfa1 minDfa3 `shouldBe` False
 
 isomorphismSpec :: SpecWith ()
 isomorphismSpec
