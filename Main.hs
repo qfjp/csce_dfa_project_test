@@ -16,7 +16,7 @@ import           ProjectTest         (execute)
 
 main :: IO ()
 main = do
-    opts          <- parseArgs
+    opts <- parseArgs
     let progDir = _progdir opts
         commentsFile = _progdir opts ++ "/comments.txt"
         commentsFileBackup = _progdir opts ++ "/comments.bak"
