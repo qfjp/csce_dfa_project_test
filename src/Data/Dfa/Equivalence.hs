@@ -18,11 +18,10 @@ module Data.Dfa.Equivalence
 import           Data.Dfa
 import           Data.Foldable          (forM_)
 import qualified Data.Map               as M
-import           Data.Maybe             (fromJust, fromMaybe)
+import           Data.Maybe             (fromJust)
 import qualified Data.Set               as S
 import qualified Data.Text              as T
 
-import           Control.Monad          (unless, when)
 import           Control.Monad.Identity hiding (forM_)
 import           Control.Monad.State    hiding (forM_)
 
@@ -122,7 +121,6 @@ hopcroftKarp dfaA dfaB
               let preStack = stack
               unless (null stack) $ do
                   forM_ σ forSymbol
-                  partition <- lift get
                   postStack <- get
                   unless (preStack == postStack) $ forStack σ
 
@@ -130,7 +128,7 @@ hopcroftKarp dfaA dfaB
                   -> StateT [(TagState, TagState)] (State (SetOfSets TagState)) ()
         forSymbol symb
           = do
-              ((p@(TagState _ pNum), q@(TagState _ qNum)):stack) <- get
+              (((TagState _ pNum), (TagState _ qNum)):stack) <- get
               let pOnSymbNum = fromJust $ M.lookup (pNum, symb) (_δ dfaA)
                   qOnSymbNum = fromJust $ M.lookup (qNum, symb) (_δ dfaB)
                   pOnSymb = TagState 'A' pOnSymbNum
@@ -138,7 +136,7 @@ hopcroftKarp dfaA dfaB
               p' <- lift $ find pOnSymb
               q' <- lift $ find qOnSymb
               when (p' /= q') $ do
-                  lift $ union p' q'
+                  _ <- lift $ union p' q'
                   put $ (pOnSymb, qOnSymb):stack
 
         checkPartition :: SetOfSets TagState -> Bool
@@ -147,9 +145,9 @@ hopcroftKarp dfaA dfaB
 
         sameFinality :: S.Set TagState -> Bool
         sameFinality states
-          = let aStates' = S.filter (\(TagState chr num) -> chr == 'A') states
-                bStates' = S.filter (\(TagState chr num) -> chr == 'B') states
-                unTag = S.map (\(TagState chr num) -> num)
+          = let aStates' = S.filter (\(TagState chr _) -> chr == 'A') states
+                bStates' = S.filter (\(TagState chr _) -> chr == 'B') states
+                unTag = S.map (\(TagState _ num) -> num)
                 aStates = unTag aStates'
                 bStates = unTag bStates'
                 aFinal = allFinal dfaA aStates

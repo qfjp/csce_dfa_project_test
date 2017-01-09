@@ -2,20 +2,6 @@
 
 module ProjectTest where
 
-{- Haskell script for testing a CSCE 355 project submission on a linux
- -  box.
- -
- - If you are running this on the lab machines, you may need to do the
- - following:
- -
- - cabal update
- - cabal install process
- - cabal install directory
- -
- - Usage:
- -  $ ProjectTest.hs -t [your-submission-root-directory] -d [location of bin and test-suite]
- -}
-
 import           Parser.Build
 import           ProgramExecution
 

@@ -8,7 +8,6 @@ parsing and the output of user functions is done here.
 module Parser.Build (parseBuildFile) where
 
 import           Control.Applicative ((<$>))
-import           Control.Monad       (when)
 import           Data.Either         (rights)
 
 import qualified Data.Text           as T
