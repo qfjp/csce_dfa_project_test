@@ -3,7 +3,7 @@
 module Data.Dfa.EquivalenceSpec where
 
 import           Data.Dfa
-import           Data.Dfa.Equivalence (equivalent)
+import           Data.Dfa.Equivalence (equivalent, isomorphic)
 import qualified Data.Map             as M
 import qualified Data.Set             as S
 import qualified Data.Text            as T
@@ -14,6 +14,7 @@ import           Text.Parsec          (ParseError, runParser)
 import           Text.RawString.QQ
 
 import           Test.Hspec
+import           Test.QuickCheck
 
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
@@ -117,6 +118,25 @@ Alphabet: 01
 6 3
 |]
 
+isomorphismSpec :: SpecWith ()
+isomorphismSpec
+  = describe "Isomorphism using Hopcroft-Karp" $ do
+      it "Any Dfa is self-isomorphic" $
+          property $ (\dfa -> isomorphic dfa dfa)
+      it "Odd zeros (2 states) ~= Odd zeros (4 states)" $
+          isomorphic oddZeros1 oddZeros2 `shouldBe` False
+      it "minDfa1 ~= nonminDfa1" $
+          let (Right minDfa) = doParseDfa minDfa1
+              (Right nonMin) = doParseDfa nonminimalDfa1
+          in isomorphic minDfa nonMin `shouldBe` False
+      it "minDfa2 ~= nonminDfa2" $
+          let (Right minDfa) = doParseDfa minDfa2
+              (Right nonMin) = doParseDfa nonminimalDfa2
+          in isomorphic minDfa nonMin `shouldBe` False
+      it "minDfa3 ~= nonminDfa3" $
+          let (Right minDfa) = doParseDfa minDfa3
+              (Right nonMin) = doParseDfa nonminimalDfa3
+          in isomorphic minDfa nonMin `shouldBe` False
 
 equivalenceSpec :: SpecWith ()
 equivalenceSpec

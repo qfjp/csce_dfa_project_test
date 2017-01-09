@@ -15,3 +15,4 @@ main
       parseSpec
       dfaSpec
       equivalenceSpec
+      isomorphismSpec
