@@ -23,7 +23,7 @@ main = do
 
     unless (_optionsSet opts) $ void printHelp
 
-    testSuiteRoot <- (++ "/test-suite") <$> _testdir opts
+    testSuiteRoot <- _testdir opts
     testPerms     <- getPermissions testSuiteRoot
     commentsExist <- doesFileExist commentsFile
 

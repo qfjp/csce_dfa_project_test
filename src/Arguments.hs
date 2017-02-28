@@ -44,14 +44,14 @@ options
     , Option ['t'] ["single-test"] (ReqArg setSingleTest "DIR")
              "test program at given directory"
     , Option ['d'] ["test-suite"] (ReqArg setTestDirectory "DIR")
-             "the location of the test-suite and auxiliary binaries"
+             "the location of the test-suite binaries"
     ]
 
 -- | The default test-suite directory
 defBaseDir :: IO FilePath
 defBaseDir
   = getEnv "HOME" >>=
-      (\h -> return $ h ++ "/public_html/csce355/prog-proj")
+      (\h -> return $ h ++ "/public_html/csce355/prog-proj/test-suite")
 
 -- | The message to print on invoking the program incorrectly.
 helpMessage :: String
