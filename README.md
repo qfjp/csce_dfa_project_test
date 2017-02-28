@@ -40,6 +40,13 @@ program
 
     mingw32-make.exe stack-test
 
+After it is built, the executable can be run from stack:
+
+    stack exec csce-dfa-project-test
+
+Or you can check the output of make to find the path of the
+executable.
+
 ## Linux and Mac OS X
 
 Ensure you have [haskell stack](https://docs.haskellstack.org/en/stable/README/)
@@ -51,3 +58,10 @@ You should verify the tests work before you run this on your own
 program
 
     make stack-test
+
+After it is built, the executable can be run from stack:
+
+    stack exec csce-dfa-project-test
+
+Or you can check the output of make to find the path of the
+executable.
