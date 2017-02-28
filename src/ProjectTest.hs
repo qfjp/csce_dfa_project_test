@@ -92,14 +92,14 @@ testCases typ
         -> let searchIn x = ["str" ++ x ++ ".txt"]
                searchOut x = "DFA" ++ x ++ ".txt"
            in makeTests searchIn searchOut searchTestCases
-      BoolopComp
+      Boolop
         -> let compIn x = [x ++ ".txt"]
                compOut x = x ++ "-comp.txt"
-           in makeTests compIn compOut bopCompTestCases
-      BoolopProd
-        -> let prodIn (x, y) = [x ++ ".txt", y ++ ".txt"]
+               complementTests = makeTests compIn compOut bopCompTestCases
+               prodIn (x, y) = [x ++ ".txt", y ++ ".txt"]
                prodOut (x, y) = x ++ "-x-" ++ y ++ ".txt"
-           in makeTests prodIn prodOut bopProdTestCases
+               productTests = makeTests prodIn prodOut bopProdTestCases
+           in complementTests ++ productTests
       Invhom
         -> let invIn x = [x ++ ".txt", x ++ "-hom.txt"]
                invOut x = x ++ "-out.txt"
@@ -265,8 +265,7 @@ compareAnswers outputs ansFilePaths typ
       Simulate   -> compareStringAnswers outputs ansFilePaths
       Minimize   -> compareAs Isomorphism outputs ansFilePaths
       Searcher   -> compareAs Isomorphism outputs ansFilePaths
-      BoolopComp -> compareAs Equivalence outputs ansFilePaths
-      BoolopProd -> compareAs Equivalence outputs ansFilePaths
+      Boolop     -> compareAs Equivalence outputs ansFilePaths
       Invhom     -> compareAs Equivalence outputs ansFilePaths
       Properties -> compareStringAnswers outputs ansFilePaths
 

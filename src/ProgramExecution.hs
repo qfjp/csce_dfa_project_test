@@ -31,8 +31,7 @@ data RunType
     | Simulate
     | Minimize
     | Searcher
-    | BoolopComp -- ^ Part 1 of the Boolop task
-    | BoolopProd -- ^ Part 2 of the Boolop task
+    | Boolop
     | Invhom
     | Properties
   deriving (Eq, Show)
@@ -49,7 +48,7 @@ instance Arbitrary RunType where
     arbitrary
       = frequency $ map (\x -> (1, return x))
                         [ Continued, Simulate, Minimize
-                        , Searcher, BoolopComp, BoolopProd, Invhom
+                        , Searcher, Boolop, Invhom
                         , Properties ]
 
 instance EqProp RunType where
@@ -61,8 +60,7 @@ rtToFile :: RunType -> String
 rtToFile Simulate   = "simulator"
 rtToFile Minimize   = "minimizer"
 rtToFile Searcher   = "searcher"
-rtToFile BoolopComp = "boolop"
-rtToFile BoolopProd = "boolop"
+rtToFile Boolop     = "boolop"
 rtToFile Invhom     = "invhom"
 rtToFile Properties = "properties"
 rtToFile Continued  = "UNDEFINED"

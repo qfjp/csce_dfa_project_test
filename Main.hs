@@ -36,7 +36,7 @@ main = do
     withFile commentsFile WriteMode $ \h -> do
       results <- mapM (execute h (testSuiteRoot, progDir))
                       [ Simulate, Minimize, Searcher
-                      , BoolopComp, BoolopProd, Invhom, Properties
+                      , Boolop, Invhom, Properties
                       ]
       hPutStrLn h "-----------------------------------------------------"
       mapM_ (flip (>>) (hPutStrLn h "") . hPutStrLn h . showProgExec) results
