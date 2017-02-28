@@ -1,4 +1,4 @@
-all : cabal-all stack-all
+all : cabal-all
 
 clean : cabal-clean stack-clean
 
