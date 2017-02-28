@@ -75,6 +75,7 @@ data ComparisonType
     = Isomorphism
     | Equivalence
 
+-- | Returns a list of (inputs, output) pairs
 testCases :: RunType -> [([String], String)]
 testCases typ
   = case typ of
@@ -83,7 +84,6 @@ testCases typ
         -> let simIn x = [x ++ ".txt", x ++ "-strings.txt"]
                simOut x = (x ++"-out.txt")
            in makeTests simIn simOut simTestCases
-           --([Char] -> [String]) -> ([Char] -> String) -> [[Char]] -> [([String], String)]
       Minimize
         -> let minIn x = ["nonminimalDFA" ++ x ++ ".txt" ]
                minOut x ="minDFA" ++ x ++ ".txt"
