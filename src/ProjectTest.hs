@@ -148,7 +148,7 @@ runProc h maybCwd testFiles (process:args)
             = (proc process (args ++ testFiles')){cwd = maybCwd}
           action = readCreateProcessWithExitCode procToExec ""
       hPutStr h "    "
-      hPutStrLn h . trunc $ fullProcStr
+      hPutStrLn h fullProcStr
       result <- timeProc action
       case result of
         Nothing -> hPutStrLn h "    TIMED OUT" >> return Nothing
