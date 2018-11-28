@@ -41,10 +41,10 @@ options :: [OptDescr (Options -> IO Options)]
 options
   = [ Option ['h'] ["help"]      (NoArg $ const printHelp)
              "print usage information"
-    , Option ['t'] ["single-test"] (ReqArg setSingleTest "DIR")
-             "test program at given directory"
-    , Option ['d'] ["test-suite"] (ReqArg setTestDirectory "DIR")
-             "the location of the test-suite binaries"
+    , Option ['d'] ["directory"] (ReqArg setSingleTest "DIR")
+             "the /path/to/your/project"
+    , Option ['t'] ["test-cases"] (ReqArg setTestDirectory "DIR")
+             "the location of the test case files"
     ]
 
 -- | The default test-suite directory
