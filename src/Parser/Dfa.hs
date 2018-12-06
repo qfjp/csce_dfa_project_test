@@ -22,7 +22,10 @@ import           Text.Parsec.String
 
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
-  = runParser parseDfa () "" . T.unpack
+  = runParser parseDfa () "" . T.unpack . stripLines
+
+stripLines :: T.Text -> T.Text
+stripLines = T.unlines . map T.strip . T.lines
 
 -- | A Dfa parser.
 parseDfa :: Parser Dfa
@@ -51,12 +54,12 @@ parseList :: Parser a -> Maybe (Parser String) -> Parser [a]
 parseList parseOne mSep
   = do
       first <- parseOne
-      rest  <- parseRemaining
+      rest  <- option [] parseRemaining
       return (first : rest)
   where
       parseRemaining
         = let pSep = fromMaybe (string "") mSep
-          in try (try pSep >> try (parseList parseOne mSep)) <|> return []
+          in try $ pSep >> choice [parseList parseOne mSep, return []]
 
 parseIntList :: Parser [Int]
 parseIntList
