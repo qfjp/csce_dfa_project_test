@@ -63,13 +63,13 @@ minDfa1 :: T.Text
 minDfa1
   = [r|
 Number of states: 5
-Accepting states: 2
+Accepting states: 2 
 Alphabet: 01
-1 3
-4 2
-0 2
-2 4
-4 0
+1 3 
+4 2 
+0 2 
+2 4 
+4 0 
 |]
 
 minDfa2 :: T.Text
