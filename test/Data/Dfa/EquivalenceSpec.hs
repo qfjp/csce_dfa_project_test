@@ -157,6 +157,15 @@ dfaTextComparisonSpec
       it "minDfa1 != minDfa3" $
           equivalentText minDfa1 minDfa3 `shouldBe` False
 
+parseTest :: (Dfa -> Dfa -> Bool) -> T.Text -> T.Text -> Bool -> IO ()
+parseTest f d1' d2' b
+  = case doParseDfa d1' of
+      (Left e) -> print e
+      (Right d1) ->
+          case doParseDfa d2' of
+            (Left e) -> print e
+            (Right d2) -> f d1 d2 `shouldBe` b
+
 isomorphismSpec :: SpecWith ()
 isomorphismSpec
   = describe "Isomorphism using Hopcroft-Karp" $ do
@@ -167,17 +176,11 @@ isomorphismSpec
       it "No final states" $
           isomorphic simple simple `shouldBe` True
       it "minDfa1 ~= nonminDfa1" $
-          let (Right minDfa) = doParseDfa minDfa1
-              (Right nonMin) = doParseDfa nonminimalDfa1
-          in isomorphic minDfa nonMin `shouldBe` False
+          parseTest isomorphic minDfa1 nonminimalDfa1 False
       it "minDfa2 ~= nonminDfa2" $
-          let (Right minDfa) = doParseDfa minDfa2
-              (Right nonMin) = doParseDfa nonminimalDfa2
-          in isomorphic minDfa nonMin `shouldBe` False
+          parseTest isomorphic minDfa2 nonminimalDfa2 False
       it "minDfa3 ~= nonminDfa3" $
-          let (Right minDfa) = doParseDfa minDfa3
-              (Right nonMin) = doParseDfa nonminimalDfa3
-          in isomorphic minDfa nonMin `shouldBe` False
+          parseTest isomorphic minDfa3 nonminimalDfa3 False
 
 equivalenceSpec :: SpecWith ()
 equivalenceSpec
@@ -185,34 +188,18 @@ equivalenceSpec
       it "Odd zeros (2 states) === Odd zeros (4 states)" $
           equivalent oddZeros1 oddZeros2 `shouldBe` True
       it "minDfa1 === nonminDfa1" $
-          let (Right minDfa) = doParseDfa minDfa1
-              (Right nonMin) = doParseDfa nonminimalDfa1
-          in equivalent minDfa nonMin `shouldBe` True
+          parseTest equivalent minDfa1 nonminimalDfa1 True
       it "minDfa2 === nonminDfa2" $
-          let (Right minDfa) = doParseDfa minDfa2
-              (Right nonMin) = doParseDfa nonminimalDfa2
-          in equivalent minDfa nonMin `shouldBe` True
+          parseTest equivalent minDfa2 nonminimalDfa2 True
       it "minDfa3 === nonminDfa3" $
-          let (Right minDfa) = doParseDfa minDfa3
-              (Right nonMin) = doParseDfa nonminimalDfa3
-          in equivalent minDfa nonMin `shouldBe` True
+          parseTest equivalent minDfa3 nonminimalDfa3 True
       it "minDfa1 != minDfa2" $
-          let (Right dfa1) = doParseDfa minDfa1
-              (Right dfa2) = doParseDfa minDfa2
-          in equivalent dfa1 dfa2 `shouldBe` False
+          parseTest equivalent minDfa1 minDfa2 False
       it "minDfa1 != minDfa3" $
-          let (Right dfa1) = doParseDfa minDfa1
-              (Right dfa2) = doParseDfa minDfa3
-          in equivalent dfa1 dfa2 `shouldBe` False
+          parseTest equivalent minDfa1 minDfa3 False
       it "minDfa1 != nonminDfa2" $
-          let (Right dfa1) = doParseDfa minDfa1
-              (Right dfa2) = doParseDfa nonminimalDfa2
-          in equivalent dfa1 dfa2 `shouldBe` False
+          parseTest equivalent minDfa1 nonminimalDfa2 False
       it "minDfa2 != nonminDfa1" $
-          let (Right dfa1) = doParseDfa minDfa2
-              (Right dfa2) = doParseDfa nonminimalDfa1
-          in equivalent dfa1 dfa2 `shouldBe` False
+          parseTest equivalent minDfa2 nonminimalDfa1 False
       it "minDfa3 != nonminDfa2" $
-          let (Right dfa1) = doParseDfa minDfa3
-              (Right dfa2) = doParseDfa nonminimalDfa2
-          in equivalent dfa1 dfa2 `shouldBe` False
+          parseTest equivalent nonminimalDfa3 nonminimalDfa2 False
