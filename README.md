@@ -21,7 +21,7 @@ following instead
 If all went well, you can find the binary at
 `$HOME/.cabal/bin/csce-dfa-project-test`:
 
-    $HOME/.cabal/bin/csce-dfa-project-test -t /path/to/your/code -d /path/to/test/files
+    $HOME/.cabal/bin/csce-dfa-project-test -d /path/to/your/code -t /path/to/test/files
 
 ## Install on Windows
 
@@ -47,7 +47,7 @@ program
 
 After it is built, the executable can be run from stack:
 
-    stack exec csce-dfa-project-test -- -t /path/to/your/code -d /path/to/test/files
+    stack exec csce-dfa-project-test -- -d /path/to/your/code -t /path/to/test/files
 
 Or you can check the output of make to find the path of the
 executable.
@@ -66,7 +66,7 @@ program
 
 After it is built, the executable can be run from stack:
 
-    stack exec csce-dfa-project-test -- -t /path/to/your/code -d /path/to/test/files
+    stack exec csce-dfa-project-test -- -d /path/to/your/code -t /path/to/test/files
 
 Or you can check the output of make to find the path of the
 executable.
