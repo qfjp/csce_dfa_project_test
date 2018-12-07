@@ -65,7 +65,7 @@ checkDfa :: T.Text -> Bool
 checkDfa dfaText
   = isRight $ doParseDfa dfaText
 
-compareText :: MonadError IOError m => (Dfa -> Dfa -> m Bool)
+compareText :: (MonadError IOError m, Functor m) => (Dfa -> Dfa -> m Bool)
             -> T.Text -> T.Text -> m Bool
 compareText f dfaT1 dfaT2
   = let dfaE1 = doParseDfa dfaT1
@@ -79,19 +79,19 @@ compareText f dfaT1 dfaT2
               Right dfa2 ->
                   f dfa1 dfa2
 
-equivalentText :: MonadError IOError m => T.Text -> T.Text -> m Bool
+equivalentText :: (MonadError IOError m, Functor m) => T.Text -> T.Text -> m Bool
 equivalentText
   = compareText equivalent
 
-isomorphicText :: MonadError IOError m => T.Text -> T.Text -> m Bool
+isomorphicText :: (MonadError IOError m, Functor m) => T.Text -> T.Text -> m Bool
 isomorphicText
   = compareText isomorphic
 
-equivalent :: MonadError IOError m => Dfa -> Dfa -> m Bool
+equivalent :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
 equivalent
   = hopcroftKarp
 
-isomorphic :: MonadError IOError m => Dfa -> Dfa -> m Bool
+isomorphic :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
 isomorphic dfa1 dfa2
   = do
       equiv <- equivalent dfa1 dfa2
@@ -99,7 +99,7 @@ isomorphic dfa1 dfa2
 
 -- | Destructive union within a set of sets
 -- TODO: StateStack is static, so this might be refactorable to RWS
-union :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m)
+union :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m, Functor m)
       => S.Set a -> S.Set a -> m Bool
 union set1 set2
   | set1 == set2
@@ -116,7 +116,7 @@ union set1 set2
               return True
 
 -- TODO: StateStack is static, so this might be refactorable to RWS
-find :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m)
+find :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m, Functor m)
      => a -> m (StateStack, S.Set a)
 find element
   = do
@@ -139,7 +139,7 @@ unsafeLeft (Left x) = x
 
 type StateStack = [(TagState, TagState)]
 
-hopcroftKarp :: MonadError IOError m => Dfa -> Dfa -> m Bool
+hopcroftKarp :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
 hopcroftKarp dfaA dfaB
   = let σ =  _Σ dfaA
         statesA = map (S.singleton . DfaA) [0.._Q dfaA - 1]
@@ -155,7 +155,8 @@ hopcroftKarp dfaA dfaB
          Left e -> throwError . userError $ e
          _ -> return $ (_Σ dfaA == _Σ dfaB) && checkPartition partition
   where
-        forStack :: MonadState (StateStack, SetOfSets TagState) m
+        forStack :: ( MonadState (StateStack, SetOfSets TagState) m,
+                      Functor m)
                  => S.Set Char
                  -> m (Either String ())
         forStack σ
@@ -170,7 +171,8 @@ hopcroftKarp dfaA dfaB
                   then return $ Left $ foldr (++) "" (lefts ret)
                   else return $ Right ()
 
-        forSymbol :: MonadState (StateStack, SetOfSets TagState) m
+        forSymbol :: ( MonadState (StateStack, SetOfSets TagState) m
+                     , Functor m)
                   => Char
                   -> m (Either String ())
         forSymbol symb
