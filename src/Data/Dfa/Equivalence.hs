@@ -23,6 +23,7 @@ import           Data.Maybe                 (fromJust)
 import qualified Data.Set                   as S
 import qualified Data.Text                  as T
 
+import           Control.Applicative        ((<$>))
 import           Control.Monad.Error.Class
 import           Control.Monad.Identity     hiding (forM_)
 import           Control.Monad.State.Strict hiding (forM_)
