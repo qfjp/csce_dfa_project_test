@@ -92,3 +92,4 @@ test-suite spec
                      , raw-strings-qq >= 1.0 && <1.2
                      , text >=1.2 && <1.3
                      , csce-dfa-project-test
+                     , mtl >= 2.1 && < 2.3

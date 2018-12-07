@@ -174,7 +174,7 @@ failExecution h failures failCode typ
                     , _errorCount = Sum $ length failures
                     , _result = failCode}
 
-execute :: (MonadIO m, MonadError IOError m) => Handle -> (FilePath, FilePath)
+execute :: (MonadIO m, MonadError IOError m, Functor m) => Handle -> (FilePath, FilePath)
         -> RunType -> m (ProgramExecution (Sum Int) Int)
 execute h (tests, this) typ
   = do
