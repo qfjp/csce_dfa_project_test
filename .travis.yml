@@ -136,7 +136,7 @@ install:
   set -ex
   case "$BUILD" in
    stack)
-     make ARGS="$ARGS" MORE="-j2 --fast" stack-build
+     make ARGS="$ARGS" MORE="-j2 --fast" stack-all
      ;;
   cabal)
     cabal --version
