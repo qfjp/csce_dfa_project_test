@@ -5,14 +5,17 @@
 sudo: false
 
 # Choose a lightweight base image; we provide our own build tools.
-language: c
+language: generic
 
 # Caching so the next build will be fast too.
 cache:
+  timeout: 2000
   directories:
   - $HOME/.ghc
   - $HOME/.cabal
   - $HOME/.stack
+  - .stack-work/
+  apt: true
 
 # The different configurations we want to test. We have BUILD=cabal which uses
 # cabal-install, and BUILD=stack which uses Stack. More documentation on each
@@ -101,7 +104,6 @@ before_install:
 # Using compiler above sets CC to an invalid value, so unset it
 - unset CC
 
-
 # We want to always allow newer versions of packages when building on GHC HEAD
 - CABALARGS=""
 - if [ "x$GHCVER" = "xhead" ]; then CABALARGS=--allow-newer; fi
@@ -134,6 +136,7 @@ install:
   set -ex
   case "$BUILD" in
    stack)
+     make ARGS="$ARGS" MORE="-j2 --fast" stack-build
      ;;
   cabal)
     cabal --version
@@ -148,7 +151,7 @@ script:
   set -ex
   case "$BUILD" in
     stack)
-      make ARGS="$ARGS" stack-test
+      make ARGS="$ARGS" MORE="--fast" stack-test
       ;;
     cabal)
       make cabal-test
