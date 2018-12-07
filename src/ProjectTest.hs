@@ -1,4 +1,5 @@
 #!/usr/bin/env runhaskell
+{-# LANGUAGE FlexibleContexts #-}
 
 module ProjectTest where
 
@@ -10,6 +11,8 @@ import           Text.Parsec.String   (parseFromFile)
 import           Control.Applicative  ((<$>))
 import           Control.Concurrent
 import           Control.Monad
+import           Control.Monad.Error.Class (MonadError)
+import           Control.Monad.IO.Class    (MonadIO, liftIO)
 
 import           Data.Dfa.Equivalence (equivalentText, isomorphicText)
 import           Data.Maybe
@@ -20,6 +23,7 @@ import qualified Data.Text.IO         as T
 import           System.Directory
 import           System.Exit
 import           System.IO
+import           System.IO.Error (catchIOError)
 import           System.Process
 
 
@@ -133,12 +137,12 @@ trunc str
   where
       num = 80
 
-runProc :: Handle -> Maybe FilePath -> [String] -> [String]
-        -> IO (Maybe (String, (ExitCode, String, String)))
+runProc :: MonadIO m => Handle -> Maybe FilePath -> [String] -> [String]
+        -> m (Maybe (String, (ExitCode, String, String)))
 runProc _ _ _ [] = return Nothing
 runProc h maybCwd testFiles (process:args)
   = do
-      testFiles' <- mapM canonicalizePath testFiles
+      testFiles' <- liftIO $ mapM canonicalizePath testFiles
       let fullProcStr'
             = process ++ " " ++
                 foldr (\s x -> s ++ " " ++ x) "" (args ++ testFiles)
@@ -147,11 +151,11 @@ runProc h maybCwd testFiles (process:args)
           procToExec
             = (proc process (args ++ testFiles')){cwd = maybCwd}
           action = readCreateProcessWithExitCode procToExec ""
-      hPutStr h "    "
-      hPutStrLn h fullProcStr
-      result <- timeProc action
+      liftIO $ hPutStr h "    "
+      liftIO $ hPutStrLn h fullProcStr
+      result <- liftIO $ timeProc action
       case result of
-        Nothing -> hPutStrLn h "    TIMED OUT" >> return Nothing
+        Nothing -> liftIO (hPutStrLn h "    TIMED OUT") >> return Nothing
         Just x  -> return . Just $ (fullProcStr, x)
 
 failExecution :: Handle -> [(String, (ExitCode, String, String))] -> Int
@@ -170,43 +174,41 @@ failExecution h failures failCode typ
                     , _errorCount = Sum $ length failures
                     , _result = failCode}
 
--- TODO break into blocks
-execute :: Handle -> (FilePath, FilePath) -> RunType
-        -> IO (ProgramExecution (Sum Int) Int)
+execute :: (MonadIO m, MonadError IOError m) => Handle -> (FilePath, FilePath)
+        -> RunType -> m (ProgramExecution (Sum Int) Int)
 execute h (tests, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
           testDir = tests ++ "/" ++ rtToFile typ ++ "/"
-      buildExists <- doesFileExist buildFile
+      buildExists <- liftIO $ doesFileExist buildFile
       if not buildExists
       then
         return PE { _tag = typ, _errorCount = Sum 0
                   , _result = 0
                   }
       else do
-        parsedFile <- parseFromFile parseBuildFile buildFile
+        parsedFile <- liftIO $ parseFromFile parseBuildFile buildFile
         case parsedFile of
           Right (builds, run) -> do
-            putStrLn $ "Building" ++ " " ++ show typ ++ "..."
-            hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
+            liftIO $ putStrLn $ "Building" ++ " " ++ show typ ++ "..."
+            liftIO $ hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
             buildResults' <- sequence <$>
                 mapM (runProc h (Just this) [] . words) builds
             when (isNothing buildResults') $
-                hPutStrLn h "  Build timed out"
+                liftIO $ hPutStrLn h "  Build timed out"
             let buildResults
                   = fromMaybe [] buildResults'
                 buildFailures
                   = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
                            buildResults
             if not (null buildFailures)
-            then failExecution h buildFailures 2 typ
+            then liftIO $ failExecution h buildFailures 2 typ
             else do
-                putStrLn $ "Running " ++ show typ ++ "..."
-                hPutStrLn h $ "Running " ++ show typ ++ "..."
+                liftIO $ putStrLn $ "Running " ++ show typ ++ "..."
+                liftIO $ hPutStrLn h $ "Running " ++ show typ ++ "..."
                 let userCmd = words run
                     testFilesNoPath = map fst . testCases $ typ
                     testFiles = map (map (testDir ++)) testFilesNoPath
-                    --cmds = map (\x -> (userCmd, x)) testFiles
                 runResults <-
                     mapM (\x -> runProc h (Just this) x userCmd)
                          testFiles
@@ -214,8 +216,8 @@ execute h (tests, this) typ
                   Nothing -> do
                       let numTimeOuts
                             = length . filter isNothing $ runResults
-                      hPutStrLn h "  ERROR: Time out"
-                      hPutStrLn h $ "  Abandoning " ++ show typ
+                      liftIO $ hPutStrLn h "  ERROR: Time out"
+                      liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
                       return PE { _tag = typ, _errorCount = Sum numTimeOuts
                                 , _result = 3
                                 }
@@ -224,26 +226,28 @@ execute h (tests, this) typ
                             = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
                                      results
                       if not (null failures)
-                      then failExecution h failures 4 typ
+                      then liftIO $ failExecution h failures 4 typ
                       else do
-                          hPutStrLn h "  Run succeeded, comparing output..."
+                          liftIO $ hPutStrLn h "  Run succeeded, comparing output..."
                           let outputs = map (\(_, (_, x, _)) -> T.pack x) results
                               answerFiles = map snd . testCases $ typ
                               answerFsInDir = map (testDir ++) answerFiles
-                          comparisons <- compareAnswers outputs
-                                                        answerFsInDir
-                                                        typ
+                          comparisons <- liftIO $ catchIOError
+                                           (compareAnswers outputs
+                                                           answerFsInDir
+                                                           typ)
+                                           (\e -> liftIO $ hPutStrLn h (show e) >> return [False])
                           let numWrong = length . filter not $ comparisons
                               wrongAnswers
                                 = map (fst . snd) . filter (not . fst) $
                                   zip comparisons results
                           unless (null wrongAnswers) $ do
-                              hPutStrLn h
+                              liftIO $ hPutStrLn h
                                 "  Errors encountered in the following runs: "
-                              mapM_ (\x -> hPutStr h "    " >> hPutStrLn h x)
+                              mapM_ (\x -> liftIO $ hPutStr h "    " >> hPutStrLn h x)
                                     wrongAnswers
                           when (null wrongAnswers) $
-                              hPutStrLn h "  No errors encountered"
+                              liftIO $ hPutStrLn h "  No errors encountered"
                           return PE { _tag = typ
                                     , _errorCount = Sum numWrong
                                     , _result = if numWrong == 0
@@ -251,14 +255,14 @@ execute h (tests, this) typ
                                                 else 4
                                     }
           Left err -> do
-            hPutStr h "  Parse Error: "
-            hPrint h err
+            liftIO $ hPutStr h "  Parse Error: "
+            liftIO $ hPrint h err
             return PE { _tag = typ
                       , _errorCount = Sum 0
                       , _result = 1}
 
-compareAnswers :: [T.Text] -> [FilePath] -> RunType
-               -> IO [Bool]
+compareAnswers :: (MonadError IOError m, MonadIO m) => [T.Text] -> [FilePath] -> RunType
+               -> m [Bool]
 compareAnswers outputs ansFilePaths typ
   = case typ of
       Continued  -> return [False]
@@ -269,21 +273,22 @@ compareAnswers outputs ansFilePaths typ
       Invhom     -> compareAs Equivalence outputs ansFilePaths
       Properties -> compareStringAnswers outputs ansFilePaths
 
-compareAs :: ComparisonType -> [T.Text] -> [FilePath] -> IO [Bool]
+compareAs :: (MonadError IOError m, MonadIO m) => ComparisonType -> [T.Text] -> [FilePath] -> m [Bool]
 compareAs tag outputs ansFilePaths
   = do
-      answers <- mapM T.readFile ansFilePaths :: IO [T.Text]
+      answers <- liftIO $ mapM T.readFile ansFilePaths
       let outsAndAns = zip outputs answers
-      return $ map (uncurry checkFunc) outsAndAns
+      mapM (uncurry checkFunc) outsAndAns
   where
+      checkFunc :: MonadError IOError m => T.Text -> T.Text -> m Bool
       checkFunc
         = case tag of
             Isomorphism -> isomorphicText
             Equivalence -> equivalentText
 
-compareStringAnswers :: [T.Text] -> [FilePath] -> IO [Bool]
+compareStringAnswers :: (MonadError IOError m, MonadIO m) => [T.Text] -> [FilePath] -> m [Bool]
 compareStringAnswers outputs ansFilePaths
   = do
-      answers <- mapM T.readFile ansFilePaths
+      answers <- liftIO $ mapM T.readFile ansFilePaths
       let results = zipWith (==) outputs answers
       return results
