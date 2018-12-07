@@ -285,13 +285,15 @@ compareAs tag outputs ansFilePaths
       let outsAndAns = zip outputs answers
       mapM (uncurry checkFunc) outsAndAns
   where
-      checkFunc :: MonadError IOError m => T.Text -> T.Text -> m Bool
+      checkFunc :: (MonadError IOError m, Functor m)
+                => T.Text -> T.Text -> m Bool
       checkFunc
         = case tag of
             Isomorphism -> isomorphicText
             Equivalence -> equivalentText
 
-compareStringAnswers :: (MonadError IOError m, MonadIO m) => [T.Text] -> [FilePath] -> m [Bool]
+compareStringAnswers :: (MonadError IOError m, MonadIO m, Functor m)
+                     => [T.Text] -> [FilePath] -> m [Bool]
 compareStringAnswers outputs ansFilePaths
   = do
       answers <- liftIO $ mapM T.readFile ansFilePaths
