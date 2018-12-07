@@ -6,24 +6,25 @@ module ProjectTest where
 import           Parser.Build
 import           ProgramExecution
 
-import           Text.Parsec.String   (parseFromFile)
+import           Text.Parsec.String        (parseFromFile)
 
-import           Control.Applicative  ((<$>))
+import           Control.Applicative       ((<$>))
 import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.Error.Class (MonadError)
 import           Control.Monad.IO.Class    (MonadIO, liftIO)
 
-import           Data.Dfa.Equivalence (equivalentText, isomorphicText)
+import           Data.Dfa.Equivalence      (equivalentText,
+                                            isomorphicText)
 import           Data.Maybe
-import           Data.Monoid          (Sum (Sum))
-import qualified Data.Text            as T
-import qualified Data.Text.IO         as T
+import           Data.Monoid               (Sum (Sum))
+import qualified Data.Text                 as T
+import qualified Data.Text.IO              as T
 
 import           System.Directory
 import           System.Exit
 import           System.IO
-import           System.IO.Error (catchIOError)
+import           System.IO.Error           (catchIOError)
 import           System.Process
 
 
@@ -137,7 +138,8 @@ trunc str
   where
       num = 80
 
-runProc :: MonadIO m => Handle -> Maybe FilePath -> [String] -> [String]
+runProc :: (MonadIO m, Functor m)
+        => Handle -> Maybe FilePath -> [String] -> [String]
         -> m (Maybe (String, (ExitCode, String, String)))
 runProc _ _ _ [] = return Nothing
 runProc h maybCwd testFiles (process:args)
@@ -174,8 +176,9 @@ failExecution h failures failCode typ
                     , _errorCount = Sum $ length failures
                     , _result = failCode}
 
-execute :: (MonadIO m, MonadError IOError m, Functor m) => Handle -> (FilePath, FilePath)
-        -> RunType -> m (ProgramExecution (Sum Int) Int)
+execute :: (MonadIO m, MonadError IOError m, Functor m)
+        => Handle -> (FilePath, FilePath) -> RunType
+        -> m (ProgramExecution (Sum Int) Int)
 execute h (tests, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
@@ -261,7 +264,8 @@ execute h (tests, this) typ
                       , _errorCount = Sum 0
                       , _result = 1}
 
-compareAnswers :: (MonadError IOError m, MonadIO m) => [T.Text] -> [FilePath] -> RunType
+compareAnswers :: (MonadError IOError m, MonadIO m, Functor m)
+               => [T.Text] -> [FilePath] -> RunType
                -> m [Bool]
 compareAnswers outputs ansFilePaths typ
   = case typ of
@@ -273,7 +277,8 @@ compareAnswers outputs ansFilePaths typ
       Invhom     -> compareAs Equivalence outputs ansFilePaths
       Properties -> compareStringAnswers outputs ansFilePaths
 
-compareAs :: (MonadError IOError m, MonadIO m) => ComparisonType -> [T.Text] -> [FilePath] -> m [Bool]
+compareAs :: (MonadError IOError m, MonadIO m, Functor m)
+          => ComparisonType -> [T.Text] -> [FilePath] -> m [Bool]
 compareAs tag outputs ansFilePaths
   = do
       answers <- liftIO $ mapM T.readFile ansFilePaths
