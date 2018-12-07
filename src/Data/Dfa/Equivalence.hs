@@ -97,6 +97,7 @@ isomorphic dfa1 dfa2
       return $ _Q dfa1 == _Q dfa2 && equiv
 
 -- | Destructive union within a set of sets
+-- TODO: StateStack is static, so this might be refactorable to RWS
 union :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m)
       => S.Set a -> S.Set a -> m Bool
 union set1 set2
@@ -113,6 +114,7 @@ union set1 set2
               put (x, newSets)
               return True
 
+-- TODO: StateStack is static, so this might be refactorable to RWS
 find :: (Show a, Ord a, MonadState (StateStack, SetOfSets a) m)
      => a -> m (StateStack, S.Set a)
 find element
