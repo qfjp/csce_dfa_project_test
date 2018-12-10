@@ -141,7 +141,8 @@ unsafeLeft (Left x) = x
 
 type StateStack = [(TagState, TagState)]
 
-hopcroftKarp :: (MonadError DfaError m) => Dfa -> Dfa -> m Bool
+hopcroftKarp :: (MonadError DfaError m, Functor m)
+             => Dfa -> Dfa -> m Bool
 hopcroftKarp dfaA dfaB
   = do
       let σ =  _Σ dfaA
