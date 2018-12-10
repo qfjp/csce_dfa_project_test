@@ -13,14 +13,14 @@ module ProgramExecution (
     , RunType(..)
     , rtToFile
     -- * Execution results
-    , Result(..)
+    , RunLevel(..)
     , resultToText
     ) where
 
 import           Control.Applicative      (Applicative, pure, (<$>),
                                            (<*>))
 import           Data.Monoid              (Monoid (..), Sum (..), (<>))
-import           Test.QuickCheck          hiding (Result (..))
+import           Test.QuickCheck
 import           Test.QuickCheck.Checkers
 
 -- | Type for different portions of the project
@@ -66,47 +66,32 @@ rtToFile Properties = "properties"
 rtToFile Continued  = "UNDEFINED"
 
 -- | A ProgramExecution is a test run over one task of the project.
-data ProgramExecution a b
+data ProgramExecution
     = PE { -- | The task which is being tested
             _tag       :: RunType
            -- | A monoid that keeps track of errors. Most likely
            -- Data.Monoid.Sum Int
-         , _errorCount :: a
-           -- | The result of the execution. Most likely 'Result'
-         , _result     :: b }
+         , _errorCount :: Sum Int
+           -- | The run level (grade status) of the execution.
+         , _runLevel   :: RunLevel }
     deriving (Eq, Show)
 
-instance Functor (ProgramExecution a) where
-    fmap f (PE t e r) = PE t e (f r)
-
-instance Monoid a => Applicative (ProgramExecution a) where
-    pure = PE Simulate mempty
-    PE t1 e1 f <*> PE t2 e2 x
-      = PE (t1 <> t2) (e1 <> e2) (f x)
-
-instance (Arbitrary a, Arbitrary b) => Arbitrary (ProgramExecution a b) where
-    arbitrary = PE Simulate <$> arbitrary <*> arbitrary
-
-instance (Eq a, Eq b) => EqProp (ProgramExecution a b) where
-    (=-=) = eq
-
-instance Monoid a => Monad (ProgramExecution a) where
-    return = pure
-    PE t e r >>= f
-      = let PE t' e' r' = f r
-        in PE (t <> t') (e <> e') r'
+instance Monoid ProgramExecution where
+    mempty = PE mempty mempty mempty
+    (PE a i x) `mappend` (PE b j y)
+      = PE (a <> b) (i <> j) (x <> y)
 
 -- | The function to show the results of a ProgramExecution. Use at
 -- the end of the comments.txt file
-showProgExec :: (Enum a, Show a) => ProgramExecution (Sum Int) a -> String
-showProgExec PE {_tag = t, _errorCount = (Sum e), _result = r}
+showProgExec :: ProgramExecution -> String
+showProgExec PE {_tag = t, _errorCount = (Sum e), _runLevel = r}
   = show t ++ ": " ++ resultToText t result ++
       "\nprogress level " ++ show r ++ " with " ++ show e ++
       " execution errors"
   where result = toEnum . fromEnum $ r
 
 -- | The status of the test run.
-data Result
+data RunLevel
   -- | not implemented at all ($prog.txt file does not exist)
   = NotImplemented
   -- | $prog.txt file exists, but there was an error parsing it
@@ -119,13 +104,19 @@ data Result
   | FinishWithError
   -- | $prog execution always completed without errors
   | FinishPerfect
-  -- | Useful to avoid partial functions with the Enum instance
-  | Unknown
-  deriving (Enum, Eq, Show)
+  | SoFar
+  deriving (Enum, Eq, Ord)
 
--- | Convert a 'RunType' and a 'Result' into a user friendly
+instance Show RunLevel where
+    show = show . fromEnum
+
+instance Monoid RunLevel where
+    mempty = SoFar
+    x `mappend` y = if y > x then x else y
+
+-- | Convert a 'RunType' and a 'RunLevel' into a user friendly
 -- description of what went wrong.
-resultToText :: RunType -> Result -> String
+resultToText :: RunType -> RunLevel -> String
 resultToText rt NotImplemented
   = "not implemented -- " ++ rtToFile rt ++ ".txt does not exist"
 resultToText rt ParseError
@@ -138,5 +129,3 @@ resultToText _ FinishWithError
   = "execution always completed, but there were errors."
 resultToText _ FinishPerfect
   = "execution always completed without errors."
-resultToText rt _
-  = "??? unknown progress status for " ++ rtToFile rt

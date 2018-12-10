@@ -138,9 +138,19 @@ trunc str
   where
       num = 80
 
+type ProgramOutput = (String, (ExitCode, String, String))
+progErr :: ProgramOutput -> String
+progErr (_, (_, _, x)) = x
+progOut :: ProgramOutput -> String
+progOut (_, (_, x, _)) = x
+progExitCode :: ProgramOutput -> ExitCode
+progExitCode (_, (x, _, _)) = x
+progName :: ProgramOutput -> String
+progName (x, (_, _, _)) = x
+
 runProc :: (MonadIO m, Functor m)
         => Handle -> Maybe FilePath -> [String] -> [String]
-        -> m (Maybe (String, (ExitCode, String, String)))
+        -> m (Maybe ProgramOutput)
 runProc _ _ _ [] = return Nothing
 runProc h maybCwd testFiles (process:args)
   = do
@@ -160,25 +170,28 @@ runProc h maybCwd testFiles (process:args)
         Nothing -> liftIO (hPutStrLn h "    TIMED OUT") >> return Nothing
         Just x  -> return . Just $ (fullProcStr, x)
 
-failExecution :: Handle -> [(String, (ExitCode, String, String))] -> Int
-              -> RunType -> IO (ProgramExecution (Sum Int) Int)
-failExecution h failures failCode typ
+failExecution :: MonadIO m
+              => Handle -> [ProgramOutput] -> RunLevel -> RunType
+              -> m (ProgramExecution)
+failExecution h failures failType typ
   = do
-      let first = head failures
-          errorMsg = (\(_, _, x) -> x) . snd $ first
-      hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-      hPutStrLn h $ "  ERROR: " ++ (show . fst) first ++ " "
-                             ++ "failed with error:"
-      hPutStrLn h $ unlines . map ("         " ++) . lines $ errorMsg
-      hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-      hPutStrLn h $ "  Abandoning " ++ show typ
+      let firstFailure = head failures
+          command = progName firstFailure
+          errorMsg = progErr firstFailure
+      liftIO $ hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      liftIO $ hPutStrLn h $ "  ERROR: " ++ (show command) ++ " "
+                                      ++ "failed with error:"
+      liftIO $ hPutStrLn h $ unlines . map ("         " ++) . lines $ errorMsg
+      liftIO $ hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+      liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
       return PE { _tag = typ
-                    , _errorCount = Sum $ length failures
-                    , _result = failCode}
+                , _errorCount = Sum $ length failures
+                , _runLevel = failType }
+
 
 execute :: (MonadIO m, MonadError IOError m, Functor m)
         => Handle -> (FilePath, FilePath) -> RunType
-        -> m (ProgramExecution (Sum Int) Int)
+        -> m (ProgramExecution)
 execute h (tests, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
@@ -187,8 +200,7 @@ execute h (tests, this) typ
       if not buildExists
       then
         return PE { _tag = typ, _errorCount = Sum 0
-                  , _result = 0
-                  }
+                  , _runLevel = NotImplemented }
       else do
         parsedFile <- liftIO $ parseFromFile parseBuildFile buildFile
         case parsedFile of
@@ -202,10 +214,10 @@ execute h (tests, this) typ
             let buildResults
                   = fromMaybe [] buildResults'
                 buildFailures
-                  = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
+                  = filter ((/= ExitSuccess) . progExitCode)
                            buildResults
             if not (null buildFailures)
-            then liftIO $ failExecution h buildFailures 2 typ
+            then failExecution h buildFailures ParseError typ
             else do
                 liftIO $ putStrLn $ "Running " ++ show typ ++ "..."
                 liftIO $ hPutStrLn h $ "Running " ++ show typ ++ "..."
@@ -222,14 +234,14 @@ execute h (tests, this) typ
                       liftIO $ hPutStrLn h "  ERROR: Time out"
                       liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
                       return PE { _tag = typ, _errorCount = Sum numTimeOuts
-                                , _result = 3
+                                , _runLevel = BuildFail
                                 }
                   Just results -> do
                       let failures
-                            = filter (\(_, (x, _, _)) -> x /= ExitSuccess)
+                            = filter ((/= ExitSuccess) . progExitCode)
                                      results
                       if not (null failures)
-                      then liftIO $ failExecution h failures 4 typ
+                      then failExecution h failures FinishWithError typ
                       else do
                           liftIO $ hPutStrLn h "  Run succeeded, comparing output..."
                           let outputs = map (\(_, (_, x, _)) -> T.pack x) results
@@ -253,16 +265,16 @@ execute h (tests, this) typ
                               liftIO $ hPutStrLn h "  No errors encountered"
                           return PE { _tag = typ
                                     , _errorCount = Sum numWrong
-                                    , _result = if numWrong == 0
-                                                then 5
-                                                else 4
+                                    , _runLevel
+                                        = if numWrong == 0
+                                          then FinishPerfect
+                                          else FinishWithError
                                     }
           Left err -> do
-            liftIO $ hPutStr h "  Parse Error: "
-            liftIO $ hPrint h err
-            return PE { _tag = typ
-                      , _errorCount = Sum 0
-                      , _result = 1}
+            failExecution h
+                          [(show typ, (undefined,undefined,show err))]
+                          ParseError
+                          typ
 
 compareAnswers :: (MonadError IOError m, MonadIO m, Functor m)
                => [T.Text] -> [FilePath] -> RunType
