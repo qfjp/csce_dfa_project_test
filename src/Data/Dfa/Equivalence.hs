@@ -24,7 +24,8 @@ import qualified Data.Set                   as S
 import qualified Data.Text                  as T
 
 import           Control.Applicative        ((<$>))
-import           Control.Monad.Error.Class
+import           Control.Monad.Except       (MonadError, runExcept,
+                                             throwError)
 import           Control.Monad.Identity     hiding (forM_)
 import           Control.Monad.State.Strict hiding (forM_)
 
@@ -65,33 +66,34 @@ checkDfa :: T.Text -> Bool
 checkDfa dfaText
   = isRight $ doParseDfa dfaText
 
-compareText :: (MonadError IOError m, Functor m) => (Dfa -> Dfa -> m Bool)
+compareText :: ( MonadError DfaError m
+               , Functor m) => (Dfa -> Dfa -> m Bool)
             -> T.Text -> T.Text -> m Bool
 compareText f dfaT1 dfaT2
   = let dfaE1 = doParseDfa dfaT1
         dfaE2 = doParseDfa dfaT2
     in
       case doParseDfa dfaT1 of
-        Left e -> throwError . userError . show $ e
+        Left e -> throwError (DfaParseError e)
         Right dfa1 ->
             case doParseDfa dfaT2 of
-              Left e -> throwError . userError . show $ e
+              Left e -> throwError (DfaParseError e)
               Right dfa2 ->
                   f dfa1 dfa2
 
-equivalentText :: (MonadError IOError m, Functor m) => T.Text -> T.Text -> m Bool
+equivalentText :: (MonadError DfaError m, Functor m) => T.Text -> T.Text -> m Bool
 equivalentText
   = compareText equivalent
 
-isomorphicText :: (MonadError IOError m, Functor m) => T.Text -> T.Text -> m Bool
+isomorphicText :: (MonadError DfaError m, Functor m) => T.Text -> T.Text -> m Bool
 isomorphicText
   = compareText isomorphic
 
-equivalent :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
+equivalent :: (MonadError DfaError m, Functor m) => Dfa -> Dfa -> m Bool
 equivalent
   = hopcroftKarp
 
-isomorphic :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
+isomorphic :: (MonadError DfaError m, Functor m) => Dfa -> Dfa -> m Bool
 isomorphic dfa1 dfa2
   = do
       equiv <- equivalent dfa1 dfa2
@@ -139,56 +141,51 @@ unsafeLeft (Left x) = x
 
 type StateStack = [(TagState, TagState)]
 
-hopcroftKarp :: (MonadError IOError m, Functor m) => Dfa -> Dfa -> m Bool
+hopcroftKarp :: (MonadError DfaError m) => Dfa -> Dfa -> m Bool
 hopcroftKarp dfaA dfaB
-  = let σ =  _Σ dfaA
-        statesA = map (S.singleton . DfaA) [0.._Q dfaA - 1]
-        statesB = map (S.singleton . DfaB) [0.._Q dfaB - 1]
-        states' = S.fromList statesA `S.union` S.fromList statesB
-        starts  = [(DfaA 0, DfaB 0)]
-        states  = execState
-                    (S.singleton (DfaA 0) `union`
-                     S.singleton (DfaB 0))
-                    (starts, states')
-        (error, (_, partition)) = runState (forStack σ) states
-    in case error of
-         Left e -> throwError . userError $ e
-         _ -> return $ (_Σ dfaA == _Σ dfaB) && checkPartition partition
+  = do
+      let σ =  _Σ dfaA
+          statesA = map (S.singleton . DfaA) [0.._Q dfaA - 1]
+          statesB = map (S.singleton . DfaB) [0.._Q dfaB - 1]
+          states' = S.fromList statesA `S.union` S.fromList statesB
+          starts  = [(DfaA 0, DfaB 0)]
+          states  = execState
+                      (S.singleton (DfaA 0) `union`
+                       S.singleton (DfaB 0))
+                      (starts, states')
+      (_, partition) <- execStateT (forStack σ) states
+      return $ (_Σ dfaA == _Σ dfaB) && checkPartition partition
   where
-        forStack :: ( MonadState (StateStack, SetOfSets TagState) m,
-                      Functor m)
+        forStack :: ( MonadError DfaError m
+                    , MonadState (StateStack, SetOfSets TagState) m
+                    , Functor m)
                  => S.Set Char
-                 -> m (Either String ())
+                 -> m ()
         forStack σ
           = do
               (stack, tagged) <- get
               let preStack = stack
-              if null stack then return (Right ()) else do
-                ret <- forM (S.toList σ) forSymbol
+              unless (null stack) $ do
+                forM_ (S.toList σ) forSymbol
                 (postStack, postTagged) <- get
-                if (preStack /= postStack) then forStack σ else
-                  if hasLefts ret
-                  then return $ Left $ foldr (++) "" (lefts ret)
-                  else return $ Right ()
+                when (preStack /= postStack) $ forStack σ
 
-        forSymbol :: ( MonadState (StateStack, SetOfSets TagState) m
+        forSymbol :: ( MonadError DfaError m
+                     , MonadState (StateStack, SetOfSets TagState) m
                      , Functor m)
                   => Char
-                  -> m (Either String ())
+                  -> m ()
         forSymbol symb
           = do
               ((p, q):stack, tagged) <- get
               let pNum = untagState p
                   qNum = untagState q
-                  err = ", " ++ show symb ++ ") doesn't exist.\n"
-                  err1 = "δ(" ++ show pNum ++ err
-                  err2 = "δ(" ++ show pNum ++ err
                   qOnSymbNum = M.lookup (qNum, symb) (_δ dfaB)
               case M.lookup (pNum, symb) (_δ dfaA) of
-                Nothing -> return $ Left err1
+                Nothing -> throwError (TransitionError pNum symb)
                 (Just pOnSymbNum) ->
                     case M.lookup (qNum, symb) (_δ dfaB) of
-                      Nothing -> return $ Left err2
+                      Nothing -> throwError (TransitionError qNum symb)
                       (Just qOnSymbNum) -> do
                           let pOnSymb = DfaA pOnSymbNum
                               qOnSymb = DfaB qOnSymbNum
@@ -198,7 +195,6 @@ hopcroftKarp dfaA dfaB
                               _ <- union p' q'
                               (stack', set) <- get
                               put $ ((pOnSymb, qOnSymb):stack', set)
-                          return (Right ())
 
         checkPartition :: SetOfSets TagState -> Bool
         checkPartition

@@ -11,7 +11,6 @@ main :: IO ()
 main
   = hspec $ do
       rtSpec
-      peSpec
       parseSpec
       dfaSpec
       equivalenceSpec

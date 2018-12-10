@@ -1,27 +1,31 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 module Data.Dfa.EquivalenceSpec where
 
 import           Data.Dfa
-import           Data.Dfa.Equivalence (equivalent, equivalentText,
-                                       isomorphic, isomorphicText)
-import qualified Data.Map             as M
-import qualified Data.Set             as S
-import qualified Data.Text            as T
+import           Data.Dfa.Equivalence    (equivalent, equivalentText,
+                                          isomorphic, isomorphicText)
+import qualified Data.Map                as M
+import qualified Data.Set                as S
+import qualified Data.Text               as T
 
-import           Parser.Dfa           (parseDfa)
+import           Parser.Dfa              (parseDfa)
 
-import           Text.Parsec          (ParseError, runParser)
+import           Text.Parsec             (ParseError, runParser)
 import           Text.RawString.QQ
 
 import           Test.Hspec
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
 
-import           Control.Monad.Error.Class
+import           Control.Monad.Except    (MonadError, runExcept,
+                                          throwError)
+
+instance MonadError DfaError (PropertyM IO)
 
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
@@ -69,13 +73,13 @@ minDfa1 :: T.Text
 minDfa1
   = [r|
 Number of states: 5
-Accepting states: 2 
+Accepting states: 2
 Alphabet: 01
-1 3 
-4 2 
-0 2 
-2 4 
-4 0 
+1 3
+4 2
+0 2
+2 4
+4 0
 |]
 
 minDfa2 :: T.Text
@@ -151,28 +155,26 @@ dfaTextComparisonSpec
                               let dfa' = showDfa dfa
                               in isomorphicText dfa' dfa'
       it "No final states" $ do
-          isomorphicText simpleText simpleText >>= (`shouldBe` True)
+          runExcept (isomorphicText simpleText simpleText) `shouldBe` (Right True)
       it "minDfa2 === nonminDfa2" $
-          equivalentText minDfa2 nonminimalDfa2 >>= (`shouldBe` True)
+          runExcept (equivalentText minDfa2 nonminimalDfa2) `shouldBe` (Right True)
       it "minDfa3 === nonminDfa3" $
-          equivalentText minDfa3 nonminimalDfa3 >>= (`shouldBe` True)
+          runExcept (equivalentText minDfa3 nonminimalDfa3) `shouldBe` (Right True)
       it "minDfa1 != minDfa2" $
-          equivalentText minDfa1 minDfa2 >>= (`shouldBe` False)
+          runExcept (equivalentText minDfa1 minDfa2) `shouldBe` (Right False)
       it "minDfa1 != minDfa3" $
-          equivalentText minDfa1 minDfa3 >>= (`shouldBe` False)
+          runExcept (equivalentText minDfa1 minDfa3) `shouldBe` (Right False)
 
-parseTest :: (Dfa -> Dfa -> IO Bool) -> T.Text -> T.Text -> Bool -> IO ()
-parseTest f d1' d2' b
+parseTest :: MonadError DfaError m
+          => (Dfa -> Dfa -> m Bool)
+          -> T.Text -> T.Text -> m Bool
+parseTest f d1' d2'
   = case doParseDfa d1' of
-      (Left e) -> print e
+      (Left e) -> throwError $ DfaParseError e
       (Right d1) ->
           case doParseDfa d2' of
-            (Left e) -> print e
-            (Right d2) -> f d1 d2 >>= (`shouldBe` b)
-
-instance MonadError IOError (PropertyM IO) where
-    throwError = undefined
-    catchError = undefined
+            (Left e)   -> throwError $ DfaParseError e
+            (Right d2) -> f d1 d2
 
 isomorphismSpec :: SpecWith ()
 isomorphismSpec
@@ -180,34 +182,34 @@ isomorphismSpec
       it "Any Dfa is self-isomorphic" $
           monadicIO $ pick arbitrary >>= \dfa -> isomorphic dfa dfa
       it "Odd zeros (2 states) ~= Odd zeros (4 states)" $
-          isomorphic oddZeros1 oddZeros2 >>= (`shouldBe` False)
+          runExcept (isomorphic oddZeros1 oddZeros2) `shouldBe` (Right False)
       it "No final states" $
-          isomorphic simple simple >>= (`shouldBe` True)
+          runExcept (isomorphic simple simple) `shouldBe` (Right True)
       it "minDfa1 ~= nonminDfa1" $
-          parseTest isomorphic minDfa1 nonminimalDfa1 False
+          runExcept (parseTest isomorphic minDfa1 nonminimalDfa1) `shouldBe` (Right False)
       it "minDfa2 ~= nonminDfa2" $
-          parseTest isomorphic minDfa2 nonminimalDfa2 False
+          runExcept (parseTest isomorphic minDfa2 nonminimalDfa2) `shouldBe` (Right False)
       it "minDfa3 ~= nonminDfa3" $
-          parseTest isomorphic minDfa3 nonminimalDfa3 False
+          runExcept (parseTest isomorphic minDfa3 nonminimalDfa3) `shouldBe` (Right False)
 
 equivalenceSpec :: SpecWith ()
 equivalenceSpec
   = describe "Equivalence using Hopcroft-Karp" $ do
       it "Odd zeros (2 states) === Odd zeros (4 states)" $
-          equivalent oddZeros1 oddZeros2 >>= (`shouldBe` True)
+          runExcept (equivalent oddZeros1 oddZeros2) `shouldBe` (Right True)
       it "minDfa1 === nonminDfa1" $
-          parseTest equivalent minDfa1 nonminimalDfa1 True
+          runExcept (parseTest equivalent minDfa1 nonminimalDfa1) `shouldBe` (Right True)
       it "minDfa2 === nonminDfa2" $
-          parseTest equivalent minDfa2 nonminimalDfa2 True
+          runExcept (parseTest equivalent minDfa2 nonminimalDfa2) `shouldBe` (Right True)
       it "minDfa3 === nonminDfa3" $
-          parseTest equivalent minDfa3 nonminimalDfa3 True
+          runExcept (parseTest equivalent minDfa3 nonminimalDfa3) `shouldBe` (Right True)
       it "minDfa1 != minDfa2" $
-          parseTest equivalent minDfa1 minDfa2 False
+          runExcept (parseTest equivalent minDfa1 minDfa2) `shouldBe` (Right False)
       it "minDfa1 != minDfa3" $
-          parseTest equivalent minDfa1 minDfa3 False
+          runExcept (parseTest equivalent minDfa1 minDfa3) `shouldBe` (Right False)
       it "minDfa1 != nonminDfa2" $
-          parseTest equivalent minDfa1 nonminimalDfa2 False
+          runExcept (parseTest equivalent minDfa1 nonminimalDfa2) `shouldBe` (Right False)
       it "minDfa2 != nonminDfa1" $
-          parseTest equivalent minDfa2 nonminimalDfa1 False
+          runExcept (parseTest equivalent minDfa2 nonminimalDfa1) `shouldBe` (Right False)
       it "minDfa3 != nonminDfa2" $
-          parseTest equivalent nonminimalDfa3 nonminimalDfa2 False
+          runExcept (parseTest equivalent nonminimalDfa3 nonminimalDfa2) `shouldBe` (Right False)

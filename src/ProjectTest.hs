@@ -6,25 +6,25 @@ module ProjectTest where
 import           Parser.Build
 import           ProgramExecution
 
-import           Text.Parsec.String        (parseFromFile)
+import           Text.Parsec.String     (parseFromFile)
 
-import           Control.Applicative       ((<$>))
+import           Control.Applicative    ((<$>))
 import           Control.Concurrent
 import           Control.Monad
-import           Control.Monad.Error.Class (MonadError)
-import           Control.Monad.IO.Class    (MonadIO, liftIO)
+import           Control.Monad.Except   (MonadError, runExceptT)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 
-import           Data.Dfa.Equivalence      (equivalentText,
-                                            isomorphicText)
+import           Data.Dfa               (DfaError (..))
+import           Data.Dfa.Equivalence   (equivalentText, isomorphicText)
 import           Data.Maybe
-import           Data.Monoid               (Sum (Sum))
-import qualified Data.Text                 as T
-import qualified Data.Text.IO              as T
+import           Data.Monoid            (Sum (Sum))
+import qualified Data.Text              as T
+import qualified Data.Text.IO           as T
 
 import           System.Directory
 import           System.Exit
 import           System.IO
-import           System.IO.Error           (catchIOError)
+import           System.IO.Error        (catchIOError)
 import           System.Process
 
 
@@ -139,14 +139,14 @@ trunc str
       num = 80
 
 type ProgramOutput = (String, (ExitCode, String, String))
-progErr :: ProgramOutput -> String
-progErr (_, (_, _, x)) = x
-progOut :: ProgramOutput -> String
-progOut (_, (_, x, _)) = x
+progErr :: ProgramOutput -> T.Text
+progErr (_, (_, _, x)) = T.pack x
+progOut :: ProgramOutput -> T.Text
+progOut (_, (_, x, _)) = T.pack x
 progExitCode :: ProgramOutput -> ExitCode
 progExitCode (_, (x, _, _)) = x
-progName :: ProgramOutput -> String
-progName (x, (_, _, _)) = x
+progName :: ProgramOutput -> T.Text
+progName (x, (_, _, _)) = T.pack x
 
 runProc :: (MonadIO m, Functor m)
         => Handle -> Maybe FilePath -> [String] -> [String]
@@ -181,7 +181,7 @@ failExecution h failures failType typ
       liftIO $ hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
       liftIO $ hPutStrLn h $ "  ERROR: " ++ (show command) ++ " "
                                       ++ "failed with error:"
-      liftIO $ hPutStrLn h $ unlines . map ("         " ++) . lines $ errorMsg
+      liftIO $ hPutStrLn h $ unlines . map ("         " ++) . lines . T.unpack $ errorMsg
       liftIO $ hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
       liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
       return PE { _tag = typ
@@ -189,7 +189,7 @@ failExecution h failures failType typ
                 , _runLevel = failType }
 
 
-execute :: (MonadIO m, MonadError IOError m, Functor m)
+execute :: (MonadIO m, Functor m)
         => Handle -> (FilePath, FilePath) -> RunType
         -> m (ProgramExecution)
 execute h (tests, this) typ
@@ -244,14 +244,14 @@ execute h (tests, this) typ
                       then failExecution h failures FinishWithError typ
                       else do
                           liftIO $ hPutStrLn h "  Run succeeded, comparing output..."
-                          let outputs = map (\(_, (_, x, _)) -> T.pack x) results
+                          let cmds = map progName results
+                              outputs = map progOut results
                               answerFiles = map snd . testCases $ typ
                               answerFsInDir = map (testDir ++) answerFiles
-                          comparisons <- liftIO $ catchIOError
-                                           (compareAnswers outputs
-                                                           answerFsInDir
-                                                           typ)
-                                           (\e -> liftIO $ hPutStrLn h (show e) >> return [False])
+                          comparisons <- (compareAnswers h
+                                                         (zip cmds outputs)
+                                                         answerFsInDir
+                                                         typ)
                           let numWrong = length . filter not $ comparisons
                               wrongAnswers
                                 = map (fst . snd) . filter (not . fst) $
@@ -276,38 +276,50 @@ execute h (tests, this) typ
                           ParseError
                           typ
 
-compareAnswers :: (MonadError IOError m, MonadIO m, Functor m)
-               => [T.Text] -> [FilePath] -> RunType
+compareAnswers :: (MonadIO m, Functor m)
+               => Handle -> [(T.Text, T.Text)] -> [FilePath] -> RunType
                -> m [Bool]
-compareAnswers outputs ansFilePaths typ
+compareAnswers h outputs ansFilePaths typ
   = case typ of
       Continued  -> return [False]
       Simulate   -> compareStringAnswers outputs ansFilePaths
-      Minimize   -> compareAs Isomorphism outputs ansFilePaths
-      Searcher   -> compareAs Isomorphism outputs ansFilePaths
-      Boolop     -> compareAs Equivalence outputs ansFilePaths
-      Invhom     -> compareAs Equivalence outputs ansFilePaths
+      Minimize   -> compareAs h typ Isomorphism outputs ansFilePaths
+      Searcher   -> compareAs h typ Isomorphism outputs ansFilePaths
+      Boolop     -> compareAs h typ Equivalence outputs ansFilePaths
+      Invhom     -> compareAs h typ Equivalence outputs ansFilePaths
       Properties -> compareStringAnswers outputs ansFilePaths
 
-compareAs :: (MonadError IOError m, MonadIO m, Functor m)
-          => ComparisonType -> [T.Text] -> [FilePath] -> m [Bool]
-compareAs tag outputs ansFilePaths
+compareAs :: (MonadIO m, Functor m)
+          => Handle -> RunType
+          -> ComparisonType -> [(T.Text, T.Text)] -> [FilePath] -> m [Bool]
+compareAs h typ tag outputs ansFilePaths
   = do
       answers <- liftIO $ mapM T.readFile ansFilePaths
-      let outsAndAns = zip outputs answers
-      mapM (uncurry checkFunc) outsAndAns
+      let outsAndAns = map (\((cmd, out), ans) -> (cmd, (out, ans))) $ zip outputs answers
+      mapM (checkFunc h typ) outsAndAns
   where
-      checkFunc :: (MonadError IOError m, Functor m)
-                => T.Text -> T.Text -> m Bool
-      checkFunc
-        = case tag of
-            Isomorphism -> isomorphicText
-            Equivalence -> equivalentText
+      checkFunc :: (MonadIO m, Functor m)
+                => Handle -> RunType -> (T.Text, (T.Text, T.Text)) -> m Bool
+      checkFunc h typ x
+        = do
+            let f = case tag of
+                    Isomorphism -> uncurry isomorphicText
+                    Equivalence -> uncurry equivalentText
+            results <- runExceptT . f . snd $ x
+            case results of
+               Right x -> return x
+               Left e ->
+                   failExecution h
+                                 [(T.unpack . fst $ x, (undefined, undefined, show e))]
+                                 FinishWithError
+                                 typ
+                   >> return False
 
-compareStringAnswers :: (MonadError IOError m, MonadIO m, Functor m)
-                     => [T.Text] -> [FilePath] -> m [Bool]
-compareStringAnswers outputs ansFilePaths
+compareStringAnswers :: (MonadIO m, Functor m)
+                     => [(T.Text, T.Text)] -> [FilePath] -> m [Bool]
+compareStringAnswers cmdOuts ansFilePaths
   = do
       answers <- liftIO $ mapM T.readFile ansFilePaths
+      let outputs = map fst cmdOuts
       let results = zipWith (==) outputs answers
       return results
