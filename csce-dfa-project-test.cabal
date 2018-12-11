@@ -37,6 +37,7 @@ library
                      , ProjectTest
                      , Parser.Build
                      , Parser.Dfa
+                     , Parser.Simulate
                      , Parser.Utils
   build-depends:       base >=4.5 && <4.11
                      , checkers >=0.4 && <0.5

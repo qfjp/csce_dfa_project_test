@@ -1,30 +1,32 @@
 #!/usr/bin/env runhaskell
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module ProjectTest where
 
 import           Parser.Build
+import           Parser.Simulate
 import           ProgramExecution
 
-import           Text.Parsec.String     (parseFromFile)
+import           Debug.Trace
 
-import           Control.Applicative    ((<$>))
+import           Text.Parsec.String   (parseFromFile)
+
+import           Control.Applicative  ((<$>))
 import           Control.Concurrent
 import           Control.Monad
-import           Control.Monad.Except   (MonadError, runExceptT)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Except (MonadError, runExceptT,
+                                       throwError)
 
-import           Data.Dfa               (DfaError (..))
-import           Data.Dfa.Equivalence   (equivalentText, isomorphicText)
+import           Data.Dfa.Equivalence (equivalentText, isomorphicText)
 import           Data.Maybe
-import           Data.Monoid            (Sum (Sum))
-import qualified Data.Text              as T
-import qualified Data.Text.IO           as T
+import           Data.Monoid          (Sum (Sum))
+import qualified Data.Text            as T
+import qualified Data.Text.IO         as T
 
 import           System.Directory
 import           System.Exit
 import           System.IO
-import           System.IO.Error        (catchIOError)
 import           System.Process
 
 
@@ -71,7 +73,7 @@ propTestCases
 ------{ Miscellaneous values }-------
 -- time limit for each run of your program (in seconds).
 timeout :: Int
-timeout = 11
+timeout = 90
 
 --------------------------{ HERE BE DRAGONS }--------------------------
 --------------{ NOTHING BELOW THIS LINE SHOULD BE CHANGED }------------
@@ -138,6 +140,7 @@ trunc str
   where
       num = 80
 
+-- | (Name, (ExitStates, StdOut, StdErr))
 type ProgramOutput = (String, (ExitCode, String, String))
 progErr :: ProgramOutput -> T.Text
 progErr (_, (_, _, x)) = T.pack x
@@ -148,13 +151,15 @@ progExitCode (_, (x, _, _)) = x
 progName :: ProgramOutput -> T.Text
 progName (x, (_, _, _)) = T.pack x
 
-runProc :: (MonadIO m, Functor m)
-        => Handle -> Maybe FilePath -> [String] -> [String]
-        -> m (Maybe ProgramOutput)
-runProc _ _ _ [] = return Nothing
-runProc h maybCwd testFiles (process:args)
+progNameErr :: ProgramOutput -> (String, T.Text)
+progNameErr (x, (_, _, y)) = (x, T.pack y)
+
+runProc :: Handle -> RunType -> Maybe FilePath -> [String] -> [String]
+        -> IO (Maybe ProgramOutput)
+runProc _ _ _ _ [] = return Nothing
+runProc h typ maybCwd testFiles (process:args)
   = do
-      testFiles' <- liftIO $ mapM canonicalizePath testFiles
+      testFiles' <- mapM canonicalizePath testFiles
       let fullProcStr'
             = process ++ " " ++
                 foldr (\s x -> s ++ " " ++ x) "" (args ++ testFiles)
@@ -163,87 +168,83 @@ runProc h maybCwd testFiles (process:args)
           procToExec
             = (proc process (args ++ testFiles')){cwd = maybCwd}
           action = readCreateProcessWithExitCode procToExec ""
-      liftIO $ hPutStr h "    "
-      liftIO $ hPutStrLn h fullProcStr
-      result <- liftIO $ timeProc action
+      hPutStr h "    "
+      hPutStrLn h fullProcStr
+      result <- timeProc action
       case result of
-        Nothing -> liftIO (hPutStrLn h "    TIMED OUT") >> return Nothing
+        Nothing -> failExecution h [(fullProcStr, "TIMED OUT")] TimeOut typ
+                   >> return Nothing -- TODO: get rid of this Nothing
+                                     -- since it masks the failure of
+                                     -- the timeout
         Just x  -> return . Just $ (fullProcStr, x)
 
-failExecution :: MonadIO m
-              => Handle -> [ProgramOutput] -> RunLevel -> RunType
-              -> m (ProgramExecution)
+failExecution :: Handle -> [(String, T.Text)] -> RunLevel -> RunType
+              -> IO (ProgramExecution)
 failExecution h failures failType typ
   = do
-      let firstFailure = head failures
-          command = progName firstFailure
-          errorMsg = progErr firstFailure
-      liftIO $ hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-      liftIO $ hPutStrLn h $ "  ERROR: " ++ (show command) ++ " "
-                                      ++ "failed with error:"
-      liftIO $ hPutStrLn h $ unlines . map ("         " ++) . lines . T.unpack $ errorMsg
-      liftIO $ hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-      liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
+      let (command, errorMsg) = head failures
+      hPutStrLn h "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+      hPutStrLn h $ "  ERROR: " ++ (show command) ++ " "
+                             ++ "failed with error:"
+      hPutStrLn h $ unlines . map ("         " ++) . lines . T.unpack $ errorMsg
+      hPutStrLn h "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
       return PE { _tag = typ
                 , _errorCount = Sum $ length failures
                 , _runLevel = failType }
 
 
-execute :: (MonadIO m, Functor m)
-        => Handle -> (FilePath, FilePath) -> RunType
-        -> m (ProgramExecution)
+execute :: Handle -> (FilePath, FilePath) -> RunType
+        -> IO (ProgramExecution)
 execute h (tests, this) typ
   = do
       let buildFile = this ++ "/" ++ rtToFile typ ++ ".txt"
           testDir = tests ++ "/" ++ rtToFile typ ++ "/"
-      buildExists <- liftIO $ doesFileExist buildFile
+      buildExists <- doesFileExist buildFile
       if not buildExists
       then
         return PE { _tag = typ, _errorCount = Sum 0
                   , _runLevel = NotImplemented }
       else do
-        parsedFile <- liftIO $ parseFromFile parseBuildFile buildFile
+        parsedFile <- parseFromFile parseBuildFile buildFile
         case parsedFile of
           Right (builds, run) -> do
-            liftIO $ putStrLn $ "Building" ++ " " ++ show typ ++ "..."
-            liftIO $ hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
+            putStrLn $ "Building" ++ " " ++ show typ ++ "..."
+            hPutStrLn h $ "Building" ++ " " ++ show typ ++ "..."
             buildResults' <- sequence <$>
-                mapM (runProc h (Just this) [] . words) builds
+                mapM (runProc h typ (Just this) [] . words) builds
             when (isNothing buildResults') $
-                liftIO $ hPutStrLn h "  Build timed out"
+                hPutStrLn h "  Build timed out"
             let buildResults
                   = fromMaybe [] buildResults'
                 buildFailures
                   = filter ((/= ExitSuccess) . progExitCode)
                            buildResults
             if not (null buildFailures)
-            then failExecution h buildFailures ParseError typ
+            then failExecution h (map progNameErr buildFailures) ParseError typ
             else do
-                liftIO $ putStrLn $ "Running " ++ show typ ++ "..."
-                liftIO $ hPutStrLn h $ "Running " ++ show typ ++ "..."
+                putStrLn $ "Running " ++ show typ ++ "..."
+                hPutStrLn h $ "Running " ++ show typ ++ "..."
                 let userCmd = words run
                     testFilesNoPath = map fst . testCases $ typ
                     testFiles = map (map (testDir ++)) testFilesNoPath
                 runResults <-
-                    mapM (\x -> runProc h (Just this) x userCmd)
+                    mapM (\x -> runProc h typ (Just this) x userCmd)
                          testFiles
                 case sequence runResults of
                   Nothing -> do
                       let numTimeOuts
                             = length . filter isNothing $ runResults
-                      liftIO $ hPutStrLn h "  ERROR: Time out"
-                      liftIO $ hPutStrLn h $ "  Abandoning " ++ show typ
                       return PE { _tag = typ, _errorCount = Sum numTimeOuts
-                                , _runLevel = BuildFail
+                                , _runLevel = TimeOut
                                 }
                   Just results -> do
                       let failures
                             = filter ((/= ExitSuccess) . progExitCode)
                                      results
                       if not (null failures)
-                      then failExecution h failures FinishWithError typ
+                      then failExecution h (map progNameErr failures) FinishWithSignalError typ
                       else do
-                          liftIO $ hPutStrLn h "  Run succeeded, comparing output..."
+                          hPutStrLn h "  Run succeeded, comparing output..."
                           let cmds = map progName results
                               outputs = map progOut results
                               answerFiles = map snd . testCases $ typ
@@ -257,12 +258,12 @@ execute h (tests, this) typ
                                 = map (fst . snd) . filter (not . fst) $
                                   zip comparisons results
                           unless (null wrongAnswers) $ do
-                              liftIO $ hPutStrLn h
+                              hPutStrLn h
                                 "  Errors encountered in the following runs: "
-                              mapM_ (\x -> liftIO $ hPutStr h "    " >> hPutStrLn h x)
+                              mapM_ (\x -> hPutStr h "    " >> hPutStrLn h x)
                                     wrongAnswers
                           when (null wrongAnswers) $
-                              liftIO $ hPutStrLn h "  No errors encountered"
+                              hPutStrLn h "  No errors encountered"
                           return PE { _tag = typ
                                     , _errorCount = Sum numWrong
                                     , _runLevel
@@ -271,35 +272,29 @@ execute h (tests, this) typ
                                           else FinishWithError
                                     }
           Left err -> do
-            failExecution h
-                          [(show typ, (undefined,undefined,show err))]
-                          ParseError
-                          typ
+            failExecution h [(show typ, T.pack (show err))] ParseError typ
 
-compareAnswers :: (MonadIO m, Functor m)
-               => Handle -> [(T.Text, T.Text)] -> [FilePath] -> RunType
-               -> m [Bool]
-compareAnswers h outputs ansFilePaths typ
+compareAnswers :: Handle -> [(T.Text, T.Text)] -> [FilePath] -> RunType
+               -> IO [Bool]
+compareAnswers h nameOuts ansFilePaths typ
   = case typ of
       Continued  -> return [False]
-      Simulate   -> compareStringAnswers outputs ansFilePaths
-      Minimize   -> compareAs h typ Isomorphism outputs ansFilePaths
-      Searcher   -> compareAs h typ Isomorphism outputs ansFilePaths
-      Boolop     -> compareAs h typ Equivalence outputs ansFilePaths
-      Invhom     -> compareAs h typ Equivalence outputs ansFilePaths
-      Properties -> compareStringAnswers outputs ansFilePaths
+      Simulate   -> compareStringAnswers h typ nameOuts ansFilePaths
+      Minimize   -> compareAs h typ Isomorphism nameOuts ansFilePaths
+      Searcher   -> compareAs h typ Isomorphism nameOuts ansFilePaths
+      Boolop     -> compareAs h typ Equivalence nameOuts ansFilePaths
+      Invhom     -> compareAs h typ Equivalence nameOuts ansFilePaths
+      Properties -> compareStringAnswers h typ nameOuts ansFilePaths
 
-compareAs :: (MonadIO m, Functor m)
-          => Handle -> RunType
-          -> ComparisonType -> [(T.Text, T.Text)] -> [FilePath] -> m [Bool]
-compareAs h typ tag outputs ansFilePaths
+compareAs ::Handle -> RunType
+          -> ComparisonType -> [(T.Text, T.Text)] -> [FilePath] -> IO [Bool]
+compareAs h typ tag nameOuts ansFilePaths
   = do
-      answers <- liftIO $ mapM T.readFile ansFilePaths
-      let outsAndAns = map (\((cmd, out), ans) -> (cmd, (out, ans))) $ zip outputs answers
+      answers <- mapM T.readFile ansFilePaths
+      let outsAndAns = map (\((cmd, out), ans) -> (cmd, (out, ans))) $ zip nameOuts answers
       mapM (checkFunc h typ) outsAndAns
   where
-      checkFunc :: (MonadIO m, Functor m)
-                => Handle -> RunType -> (T.Text, (T.Text, T.Text)) -> m Bool
+      checkFunc :: Handle -> RunType -> (T.Text, (T.Text, T.Text)) -> IO Bool
       checkFunc h typ x
         = do
             let f = case tag of
@@ -310,16 +305,62 @@ compareAs h typ tag outputs ansFilePaths
                Right x -> return x
                Left e ->
                    failExecution h
-                                 [(T.unpack . fst $ x, (undefined, undefined, show e))]
+                                 [(T.unpack . fst $ x, T.pack . show $ e)]
                                  FinishWithError
                                  typ
                    >> return False
 
-compareStringAnswers :: (MonadIO m, Functor m)
-                     => [(T.Text, T.Text)] -> [FilePath] -> m [Bool]
-compareStringAnswers cmdOuts ansFilePaths
+compareStringAnswers :: Handle -> RunType
+                     -> [(T.Text, T.Text)] -> [FilePath] -> IO [Bool]
+compareStringAnswers h typ cmdOuts ansFilePaths
   = do
-      answers <- liftIO $ mapM T.readFile ansFilePaths
-      let outputs = map fst cmdOuts
-      let results = zipWith (==) outputs answers
-      return results
+      answers <- mapM T.readFile ansFilePaths
+      let compares = zip (map snd cmdOuts) answers
+          withCmds = zip (map fst cmdOuts) compares
+      mapM equalFunc withCmds
+  where
+      equalFunc :: (T.Text, (T.Text, T.Text)) -> IO Bool
+      equalFunc (cmd, (out, ans))
+        | typ == Simulate = simEqualFunc (cmd, (out, ans))
+        | otherwise
+            = if out == ans
+              then return True
+              else failExecution
+                     h
+                     [(T.unpack cmd, out `T.append` "\n" `T.append` ans)]
+                     FinishWithError
+                     typ
+                   >> return False
+      simEqualFunc :: (T.Text, (T.Text, T.Text)) -> IO Bool
+      simEqualFunc (cmd', (out, ans))
+        = let outP' = doParseSim out
+              ansP' = doParseSim ans
+              cmd = T.unpack cmd'
+          in case outP' of
+            Left e -> failExecution h [(cmd, T.pack . show $ e)] FinishWithError typ >> return False
+            Right outP ->
+                case ansP' of
+                  Left e -> failExecution h [(cmd, T.pack . show $ e)] FinishWithError typ >> return False
+                  Right ansP ->
+                      if outP == ansP then return True
+                      else failExecution h [(cmd, shrinkSimConflict outP ansP)] FinishWithError typ
+                           >> return False
+
+shrinkSimConflict :: [Bool] -> [Bool] -> T.Text
+shrinkSimConflict out ans
+  = if length out /= length ans
+    then "number of answers don't match"
+    else "Output disagrees:\n" `T.append` showShrink out ans
+  where
+      showShrink out ans
+        = listToResponses out
+        `T.append` "\n"
+        `T.append` listToResponses ans
+        `T.append` "\n"
+        `T.append` T.stripEnd indicatorString
+      listToResponses
+        = foldr (\x y -> (if x then "A" else "R") `T.append` y) ""
+      indicatorString = foldr (\x y -> (if x then " " else "^") `T.append` y) ""
+                      $ zipWith (==) ans out
+
+

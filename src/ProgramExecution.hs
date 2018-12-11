@@ -85,10 +85,9 @@ instance Monoid ProgramExecution where
 -- the end of the comments.txt file
 showProgExec :: ProgramExecution -> String
 showProgExec PE {_tag = t, _errorCount = (Sum e), _runLevel = r}
-  = show t ++ ": " ++ resultToText t result ++
+  = show t ++ ": " ++ resultToText t r ++
       "\nprogress level " ++ show r ++ " with " ++ show e ++
       " execution errors"
-  where result = toEnum . fromEnum $ r
 
 -- | The status of the test run.
 data RunLevel
@@ -102,13 +101,19 @@ data RunLevel
   | TimeOut
   -- | $prog execution always completed (but there were errors)
   | FinishWithError
+  -- | $prog execution always completed, but the program returned a
+  -- nonzero exit status
+  | FinishWithSignalError
   -- | $prog execution always completed without errors
   | FinishPerfect
   | SoFar
   deriving (Enum, Eq, Ord)
 
 instance Show RunLevel where
-    show = show . fromEnum
+    show x
+      = let num = fromEnum x
+        in show $ if num < 5 then num else num - 1
+
 
 instance Monoid RunLevel where
     mempty = SoFar
@@ -127,5 +132,7 @@ resultToText _ TimeOut
   = "built OK, but execution timed out at least once."
 resultToText _ FinishWithError
   = "execution always completed, but there were errors."
+resultToText _ FinishWithSignalError
+  = "executable signaled an error (nonzero exit status)."
 resultToText _ FinishPerfect
   = "execution always completed without errors."
