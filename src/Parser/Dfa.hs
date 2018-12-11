@@ -12,7 +12,6 @@ import qualified Data.Map            as M
 import qualified Data.Set            as S
 import qualified Data.Text           as T
 
-import           Data.Dfa            (Dfa (..))
 import           Data.Maybe
 
 import           Control.Monad
@@ -20,12 +19,12 @@ import           Control.Monad
 import           Text.Parsec
 import           Text.Parsec.String
 
+import           Data.Dfa            (Dfa (..))
+import           Parser.Utils
+
 doParseDfa :: T.Text -> Either ParseError Dfa
 doParseDfa
   = runParser parseDfa () "" . T.unpack . stripLines
-
-stripLines :: T.Text -> T.Text
-stripLines = T.unlines . map T.strip . T.lines
 
 -- | A Dfa parser.
 parseDfa :: Parser Dfa
@@ -39,39 +38,10 @@ parseDfa
       δ     <- parseTransFunction numQs (S.toAscList σ)
       return Dfa {_Q = numQs, _Σ = σ, _δ = δ, _F = fs}
 
-parseTextThenColon :: Parser String
-parseTextThenColon
-  = do
-      text <- many (upper <|> lower <|> space)
-      _ <- try (string ": ") <|> string ":"
-      return text
-
-parseInt :: Parser Int
-parseInt
-  = read <$> many1 digit
-
-parseList :: Parser a -> Maybe (Parser String) -> Parser [a]
-parseList parseOne mSep
-  = do
-      first <- parseOne
-      rest  <- option [] parseRemaining
-      return (first : rest)
-  where
-      parseRemaining
-        = let pSep = fromMaybe (string "") mSep
-          in try $ pSep >> choice [parseList parseOne mSep, return []]
-
-parseIntList :: Parser [Int]
-parseIntList
-  = parseList parseInt (Just $ string " ")
-
 parseAlphChar :: Parser Char
 parseAlphChar
   = oneOf $ map (toEnum :: Int -> Char) [32..126]
 
-parseIntListList :: Parser [[Int]]
-parseIntListList
-  = parseList parseIntList (Just $ string "\n")
 
 parseAlphabetChars :: Parser String
 parseAlphabetChars
