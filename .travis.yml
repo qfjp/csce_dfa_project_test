@@ -55,9 +55,9 @@ matrix:
 
   # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
   # variable, such as using --stack-yaml to point to a different file.
-  - env: BUILD=stack GHCVER=7.8.4 ARGS="--stack-yaml stack-2.yaml --resolver lts-2"
-    compiler: ": #stack 2 (ghc 7.8.4)"
-    addons: {apt: {packages: [libgmp-dev]}}
+  #- env: BUILD=stack GHCVER=7.8.4 ARGS="--stack-yaml stack-2.yaml --resolver lts-2"
+  #  compiler: ": #stack 2 (ghc 7.8.4)"
+  #  addons: {apt: {packages: [libgmp-dev]}}
 
   - env: BUILD=stack GHCVER=7.10.2 ARGS="--resolver lts-3"
     compiler: ": #stack 3 (ghc 7.10.2)"
